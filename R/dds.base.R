@@ -1,34 +1,35 @@
-#
-# # Default parameters
-# verbose <- TRUE
-# seed <- 666
-# scansio.url <- "https://opendata.rapid7.com/sonar.tcp/2019-04-04-1554350684-ftp_21.csv.gz"
-# maxmind.url <- "https://geolite.maxmind.com/download/geoip/database/GeoLite2-City-CSV.zip"
-# scope <- 500
-# output.file <- "geoftps.rds"
-#
-# # Initial Setup
-# log.msg(verbose, "[*] Initial setup")
-# tini <- Sys.time()
-# set.seed(seed)
-# dir.data <- file.path(getwd(), "data")
-# create.directory(verbose, dir.data)
-#
-# # scans.io - Obtener datos en crudo
-# log.msg(verbose, "[*] Read RAW data from scans.io")
-# scansio.source <- file.path(getwd(), "data","scans.io.tcp21.csv")
-# scansio.file.gz <- paste(scansio.source, ".gz", sep = "")
-# download.file(url = scansio.url, destfile = scansio.file.gz)
-# decompress.data(verbose, scansio.file.gz, "gz", TRUE)
-# df.tcp21 <- read.csv(scansio.source, stringsAsFactors = FALSE)
-#
-# # Maxmind - Obtener datos en crudo (city)
-# log.msg(verbose, "[*] Read RAW data from MaxMind")
-# maxmind.file <- file.path(getwd(), "data", "maxmind.zip")
-# download.file(url = maxmind.url, destfile = maxmind.file)
-#
-#
-#
+library(GroupAssignmentPackage)
+
+# Default parameters
+verbose <- TRUE
+seed <- 666
+scansio.url <- "https://opendata.rapid7.com/sonar.tcp/2019-04-04-1554350684-ftp_21.csv.gz"
+maxmind.url <- "https://geolite.maxmind.com/download/geoip/database/GeoLite2-City-CSV.zip"
+scope <- 500
+output.file <- "geoftps.rds"
+
+# Initial Setup
+GroupAssigmentPackage::log_msg(verbose, "[*] Initial setup", "")
+tini <- Sys.time()
+set.seed(seed)
+dir.data <- file.path(getwd(), "data")
+GroupAssigmentPackage::create_directory(verbose, dir.data)
+
+# scans.io - Obtener datos en crudo
+GroupAssigmentPackage::log_msg(verbose, "[*] Read RAW data from scans.io", "")
+scansio.source <- file.path(getwd(), "data","scans.io.tcp21.csv")
+scansio.file.gz <- paste(scansio.source, ".gz", sep = "")
+download.file(url = scansio.url, destfile = scansio.file.gz)
+GroupAssigmentPackage::decompress_data(verbose, scansio.file.gz, "gz", TRUE)
+df.tcp21 <- read.csv(scansio.source, stringsAsFactors = FALSE)
+
+# Maxmind - Obtener datos en crudo (city)
+GroupAssigmentPackage::log_msg(verbose, "[*] Read RAW data from MaxMind", "")
+maxmind.file <- file.path(getwd(), "data", "maxmind.zip")
+download.file(url = maxmind.url, destfile = maxmind.file)
+
+
+
 # zipfiles <- unzip(zipfile = maxmind.file, list = T)
 # maxmind.source <- zipfiles$Name[grep(pattern = ".*GeoLite2-City-Blocks-IPv4.csv", x = zipfiles$Name)]
 # unzip(zipfile = maxmind.file, exdir = dir.data, files = maxmind.source)
