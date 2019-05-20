@@ -10,9 +10,9 @@
 log_msg <- function(pVerbose, pMessage, pLogFile) {
   if (pVerbose) {
     print(pMessage)
-    if (nchar(pLogFile) > 0) {
-      ######## Log to file
-    }
+#    if (nchar(pLogFile) > 0) {
+#      ######## Log to file
+#    }
   }
 }
 
@@ -27,13 +27,13 @@ log_msg <- function(pVerbose, pMessage, pLogFile) {
 #' @examples
 create_directory <- function(pVerbose, pDirectory) {
   if (!dir.exists(pDirectory)) {
-    log_msg(pVerbose, "[*] Create directory")
+    log_msg(pVerbose, "[*] Create directory", "")
     dir.create(pDirectory)
   }
   else {
-    log_msg(pVerbose, "[*] Directory already exists")
+    log_msg(pVerbose, "[*] Directory already exists", "")
   }
-  log_msg(pVerbose, stringi::stri_paste("[*]   ", pDirectory))
+  log_msg(pVerbose, stringi::stri_paste("[*]   ", pDirectory), "")
 }
 
 #' Decompresses a file.
@@ -49,13 +49,38 @@ create_directory <- function(pVerbose, pDirectory) {
 #' @examples
 decompress_data <- function (pVerbose, pFile.name, pCompress.type, pDelete.file) {
   if (pCompress.type == "gz") {
-    log_msg(pVerbose, "[*] Decompressing file: ")
-    log_msg(pVerbose, paste("[*]   ", pFile.name))
+    log_msg(pVerbose, "[*] Decompressing file: ", "")
+    log_msg(pVerbose, paste("[*]   ", pFile.name), "")
     R.utils::gunzip(pFile.name)
-    log_msg(pVerbose, paste("[*] File decompressed. Compression type: ", pCompress.type))
+    log_msg(pVerbose, paste("[*] File decompressed. Compression type: ", pCompress.type), "")
   }
   if (pDelete.file) {
-    log_msg(pVerbose, paste("[*] File ", pFile.name, " removed"))
+    log_msg(pVerbose, paste("[*] File ", pFile.name, " removed"), "")
     rm(pFile.name)
   }
+}
+
+#' Decompresses a compressed file which contains multiple files
+#'
+#' @details Decompresses a compressed file which contains multiple files.
+#' @param pVerbose A boolean (TRUE or FALSE).
+#' @param pFile.name filename (including the full path) of the file to be decompressed.
+#' @param pCompress.type It indicates the type of compressed file.
+#' @param pDelete.file A boolean (TRUE or FALSE) indicating if the compressed file has to be deleted after being decompressed.
+#' @return nothing.
+#' @export
+#'
+#' @examples
+decompress_multifile <- function (pVerbose, pFile.name, pCompress.type, pDelete.file) {
+  if (pCompress.type == "zip") {
+    log_msg(pVerbose, paste("[*] Decompressing ", pCompress.type, " file: "), "")
+    log_msg(pVerbose, paste("[*]   ", pFile.name), "")
+    vzipfiles <- unzip(zipfile = pFile.name, list = T)
+    log_msg(pVerbose, paste("[*] File decompressed. Compression type: ", pCompress.type), "")
+  }
+  if (pDelete.file) {
+    log_msg(pVerbose, paste("[*] File ", pFile.name, " removed"), "")
+    rm(pFile.name)
+  }
+  return(vzipfile)
 }

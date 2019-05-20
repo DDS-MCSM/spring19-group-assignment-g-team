@@ -9,34 +9,36 @@ scope <- 500
 output.file <- "geoftps.rds"
 
 # Initial Setup
-GroupAssigmentPackage::log_msg(verbose, "[*] Initial setup", "")
+GroupAssignmentPackage::log_msg(verbose, "[*] Initial setup", "")
 tini <- Sys.time()
 set.seed(seed)
 dir.data <- file.path(getwd(), "data")
-GroupAssigmentPackage::create_directory(verbose, dir.data)
+GroupAssignmentPackage::create_directory(verbose, dir.data)
 
 # scans.io - Obtener datos en crudo
-GroupAssigmentPackage::log_msg(verbose, "[*] Read RAW data from scans.io", "")
+GroupAssignmentPackage::log_msg(verbose, "[*] Read RAW data from scans.io", "")
 scansio.source <- file.path(getwd(), "data","scans.io.tcp21.csv")
 scansio.file.gz <- paste(scansio.source, ".gz", sep = "")
 download.file(url = scansio.url, destfile = scansio.file.gz)
-GroupAssigmentPackage::decompress_data(verbose, scansio.file.gz, "gz", TRUE)
+GroupAssignmentPackage::decompress_data(verbose, scansio.file.gz, "gz", TRUE)
 df.tcp21 <- read.csv(scansio.source, stringsAsFactors = FALSE)
 
 # Maxmind - Obtener datos en crudo (city)
-GroupAssigmentPackage::log_msg(verbose, "[*] Read RAW data from MaxMind", "")
+GroupAssignmentPackage::log_msg(verbose, "[*] Read RAW data from MaxMind", "")
 maxmind.file <- file.path(getwd(), "data", "maxmind.zip")
 download.file(url = maxmind.url, destfile = maxmind.file)
 
+zipfiles <- GroupAssignmentPackage::decompress_multifile(pVerbose, maxmind.file, "zip", TRUE)
 
 
-# zipfiles <- unzip(zipfile = maxmind.file, list = T)
-# maxmind.source <- zipfiles$Name[grep(pattern = ".*GeoLite2-City-Blocks-IPv4.csv", x = zipfiles$Name)]
-# unzip(zipfile = maxmind.file, exdir = dir.data, files = maxmind.source)
-# maxmind.source <- file.path(getwd(), "data", maxmind.source)
-# df.maxmind <- read.csv(maxmind.source, stringsAsFactors = FALSE)
-# rm(maxmind.file, zipfiles)
-#
+
+
+maxmind.source <- zipfiles$Name[grep(pattern = ".*GeoLite2-City-Blocks-IPv4.csv", x = zipfiles$Name)]
+unzip(zipfile = maxmind.file, exdir = dir.data, files = maxmind.source)
+maxmind.source <- file.path(getwd(), "data", maxmind.source)
+df.maxmind <- read.csv(maxmind.source, stringsAsFactors = FALSE)
+rm(maxmind.file, zipfiles)
+
 # # Seleccionamos una muestra de scans
 # if (verbose) print("[*] Subseting scans data set")
 # df.tcp21$saddr.num <- iptools::ip_to_numeric(df.tcp21$saddr)
