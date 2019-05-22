@@ -16,6 +16,7 @@ log_msg <- function(pVerbose, pMessage, pLogFile) {
   }
 }
 
+
 #' Creates a directory.
 #'
 #' @details Creates a directory.
@@ -36,6 +37,7 @@ create_directory <- function(pVerbose, pDirectory) {
   log_msg(pVerbose, stringi::stri_paste("[*]   ", pDirectory), "")
 }
 
+
 #' Decompresses a file.
 #'
 #' @details Decompresses a compressed file.
@@ -47,7 +49,7 @@ create_directory <- function(pVerbose, pDirectory) {
 #' @export
 #'
 #' @examples
-decompress_data <- function (pVerbose, pFile.name, pCompress.type, pDelete.file) {
+decompress_file <- function (pVerbose, pFile.name, pCompress.type, pDelete.file) {
   if (pCompress.type == "gz") {
     log_msg(pVerbose, "[*] Decompressing file: ", "")
     log_msg(pVerbose, paste("[*]   ", pFile.name), "")
@@ -59,6 +61,7 @@ decompress_data <- function (pVerbose, pFile.name, pCompress.type, pDelete.file)
     rm(pFile.name)
   }
 }
+
 
 #' Decompresses a compressed file which contains multiple files
 #'
@@ -82,5 +85,33 @@ decompress_multifile <- function (pVerbose, pFile.name, pCompress.type, pDelete.
     log_msg(pVerbose, paste("[*] File ", pFile.name, " removed"), "")
     rm(pFile.name)
   }
-  return(vzipfile)
+  return(vzipfiles)
+}
+
+
+#' Download data
+#'
+#' @details Downloads data from UNSV ADFA.
+#' @return nothing.
+#' @export
+#'
+#' @examples
+download_data <- function () {
+  verbose <- TRUE
+  src.url <- "https://www.unsw.adfa.edu.au/unsw-canberra-cyber/cybersecurity/ADFA-NB15-Datasets/UNSW-NB15_1.csv"
+
+  # Initial Setup
+  log_msg(verbose, "[*] Initial setup", "")
+  tini <- Sys.time()
+  #log_msg(verbose, paste("[*] Initial setup ", tini), "")
+  dir.data <- file.path(getwd(), "data")
+  create_directory(verbose, dir.data)
+
+  # Obtener datos en crudo
+  log_msg(verbose, "[*] Read RAW data", "")
+  local.file <- file.path(getwd(), "data","prova.csv")
+  ##download.file(url = src.url, destfile = local.file)
+  df.attacks <- read.csv(local.file, stringsAsFactors = FALSE)
+
+  return(df.attacks)
 }
