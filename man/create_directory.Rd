@@ -20,3 +20,6 @@ Creates a directory.
 \details{
 Creates a directory.
 }
+\examples{
+--
+}

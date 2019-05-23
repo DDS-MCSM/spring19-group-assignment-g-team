@@ -6,7 +6,7 @@
 #' @return nothing.
 #' @export
 #'
-#' @examples
+#' @examples --
 log_msg <- function(pVerbose, pMessage, pLogFile) {
   if (pVerbose) {
     print(pMessage)
@@ -25,7 +25,7 @@ log_msg <- function(pVerbose, pMessage, pLogFile) {
 #' @return nothing.
 #' @export
 #'
-#' @examples
+#' @examples --
 create_directory <- function(pVerbose, pDirectory) {
   if (!dir.exists(pDirectory)) {
     log_msg(pVerbose, "[*] Create directory", "")
@@ -48,7 +48,7 @@ create_directory <- function(pVerbose, pDirectory) {
 #' @return nothing.
 #' @export
 #'
-#' @examples
+#' @examples --
 decompress_file <- function (pVerbose, pFile.name, pCompress.type, pDelete.file) {
   if (pCompress.type == "gz") {
     log_msg(pVerbose, "[*] Decompressing file: ", "")
@@ -73,7 +73,7 @@ decompress_file <- function (pVerbose, pFile.name, pCompress.type, pDelete.file)
 #' @return nothing.
 #' @export
 #'
-#' @examples
+#' @examples --
 decompress_multifile <- function (pVerbose, pFile.name, pCompress.type, pDelete.file) {
   if (pCompress.type == "zip") {
     log_msg(pVerbose, paste("[*] Decompressing ", pCompress.type, " file: "), "")
@@ -95,23 +95,138 @@ decompress_multifile <- function (pVerbose, pFile.name, pCompress.type, pDelete.
 #' @return nothing.
 #' @export
 #'
-#' @examples
+#' @examples --
 download_data <- function () {
   verbose <- TRUE
-  src.url <- "https://www.unsw.adfa.edu.au/unsw-canberra-cyber/cybersecurity/ADFA-NB15-Datasets/UNSW-NB15_1.csv"
+  overwrite.data <- FALSE
+  testing <- TRUE
+  local.data.folder <- file.path(getwd(), "data")
+  local.data.filename <- "dataset.csv"
 
   # Initial Setup
   log_msg(verbose, "[*] Initial setup", "")
+  if (testing) {
+    log_msg(verbose, "[*]   We're testing", "")
+    src.url.fullpath <- "https://www.unsw.adfa.edu.au/unsw-canberra-cyber/cybersecurity/ADFA-NB15-Datasets/a%20part%20of%20training%20and%20testing%20set/UNSW_NB15_testing-set.csv"
+  } else {
+    log_msg(verbose, "[*]   We're NOT testing", "")
+    src.url.fullpath <- "https://www.unsw.adfa.edu.au/unsw-canberra-cyber/cybersecurity/ADFA-NB15-Datasets/UNSW-NB15_1.csv"
+  }
+
   tini <- Sys.time()
   #log_msg(verbose, paste("[*] Initial setup ", tini), "")
-  dir.data <- file.path(getwd(), "data")
-  create_directory(verbose, dir.data)
+  create_directory(verbose, local.data.folder)
+  local.data.fullpath <- file.path(local.data.folder, local.data.filename)
 
-  # Obtener datos en crudo
-  log_msg(verbose, "[*] Read RAW data", "")
-  local.file <- file.path(getwd(), "data","prova.csv")
-  ##download.file(url = src.url, destfile = local.file)
-  df.attacks <- read.csv(local.file, stringsAsFactors = FALSE)
+  # Descargar datos en crudo
+  log_msg(verbose, "[*] Download RAW data", "")
+  if (overwrite.data | !file.exists(local.data.fullpath)) {
+    log_msg(verbose, "[*]   Raw data file has to be downloaded. Starting download.....", "")
+    download.file(url = src.url.fullpath, destfile = local.data.fullpath)
+  } else {
+    log_msg(verbose, "[*]   Raw data file already exists. It will NOT be downloaded again.", "")
+  }
+  df.attacks <- read.csv(local.data.fullpath, stringsAsFactors = FALSE)
 
   return(df.attacks)
 }
+
+
+#' Download maxmind
+#'
+#' @details Downloads maxmind file MaxMind site.
+#' @return Returns a df with the GPS position of each registered network
+#' @export
+#'
+#' @examples --
+download_maxmind <- function () {
+  verbose <- TRUE
+  overwrite.data <- FALSE
+  testing <- TRUE
+  local.data.folder <- file.path(getwd(), "data")
+  local.data.filename <- "maxmind.zip"
+  local.data.fullpath <- file.path(local.data.folder, local.data.filename)
+  src.url <- "https://geolite.maxmind.com/download/geoip/database/GeoLite2-City-CSV.zip"
+  output.file <- "geoftps.rds"
+
+  if (overwrite.data | !file.exists(local.data.fullpath)) {
+    log_msg(verbose, "[*] Read RAW data from MaxMind", "")
+    local.data.fullpath <- file.path(local.data.folder, local.data.filename)
+    download.file(url = src.url, destfile = local.data.fullpath)
+  }
+  log_msg(verbose, "[*] Decompressing files...", "")
+  zipfiles <- decompress_multifile(verbose, local.data.fullpath, "zip", TRUE)
+  maxmind.source <- zipfiles$Name[grep(pattern = ".*GeoLite2-City-Blocks-IPv4.csv", x = zipfiles$Name)]
+  log_msg(verbose, "[*] Unzip file...", "")
+  unzip(zipfile = local.data.fullpath, exdir = local.data.folder, files = maxmind.source)
+  maxmind.source <- file.path(getwd(), "data", maxmind.source)
+
+  log_msg(verbose, "[*] Loading file into a dataframe...", "")
+  df.maxmind <- read.csv(maxmind.source, stringsAsFactors = FALSE)
+
+  log_msg(verbose, "[*] Adding range boundaries for each network", "")
+  df.maxmind <- cbind(df.maxmind, iptools::range_boundaries(df.maxmind$network))
+  df.maxmind$rowname <- as.integer(row.names(df.maxmind))
+
+  rm(local.data.fullpath, zipfiles)
+
+  return(df.maxmind)
+}
+
+
+#' Get subset of rows
+#'
+#' @details Selects (randomly) a number of rows from pData.
+#' @return Returns a df with only the requested pNumRows from pData
+#' @export
+#'
+#' @examples --
+get_subset_rows <- function (pData, pNumRows) {
+  muestra <- sample(1:nrow(pData), pNumRows)
+  df <- pData[muestra,]
+
+  return(df)
+}
+
+
+#' Add columns for lookup
+#'
+#' @details Adds the required columns that will be used for the lookup with Maxmind.
+#' @return DataFrame with additional columns
+#' @export
+#'
+#' @examples --
+add_columns_for_lookup <- function (verbose, pData) {
+  if (verbose) print("[*] Adding columns to dataframe, for looking up with MaxMind...")
+##  pData$srcip_num <- iptools::ip_to_numeric(pData$dstip)
+  pData$srcip_num <- iptools::ip_to_numeric(pData$ï..srcip)
+  pData$dstip_num <- iptools::ip_to_numeric(pData$dstip)
+
+  return (pData)
+}
+
+
+#' Lookup to Maxmind to get geolocation (Lat, Lon, Accuracy) of IP_Ori and IP_Dest.
+#'
+#' @details Adds the geolocation columns into the DataFrame, by looking up to Maxmind through srcip_num and dstip_num.
+#' @return DataFrame with additional columns (Lat, Lon, Accuracy) for IP_Ori and IP_Dest
+#' @export
+#'
+#' @examples --
+lookup_to_maxmind <- function (verbose, pData, pMaxMind) {
+  if (verbose) print("[*] Adding geolocation columns to dataframe, by looking up to MaxMind...")
+
+
+  return (pData)
+}
+
+#   pData$sloc <- sapply(pData$saddr.num,
+#                         function(ip)
+#                           which((ip >= pMaxMind$min_numeric) &
+#                                   (ip <= pMaxMind$max_numeric)))
+#   pData$dloc <- sapply(pData$daddr.num,
+#                         function(ip)
+#                           which((ip >= pMaxMind$min_numeric) &
+#                                   (ip <= pMaxMind$max_numeric)))
+#   return(pData)
+# }

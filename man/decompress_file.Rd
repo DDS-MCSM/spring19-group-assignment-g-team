@@ -24,3 +24,6 @@ Decompresses a file.
 \details{
 Decompresses a compressed file.
 }
+\examples{
+--
+}
