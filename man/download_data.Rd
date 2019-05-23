@@ -15,3 +15,6 @@ Download data
 \details{
 Downloads data from UNSV ADFA.
 }
+\examples{
+--
+}

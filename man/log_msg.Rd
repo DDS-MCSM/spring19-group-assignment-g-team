@@ -20,3 +20,6 @@ Logs a message to the Log. If a filename is passed as parameter, it will also pr
 \details{
 It's very useful to log messages through a function like this, as it will save you time when developing. You will have to just change the name of the variable 'pVerbose' to log or stop logging messages.
 }
+\examples{
+--
+}
