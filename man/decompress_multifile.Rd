@@ -24,3 +24,6 @@ Decompresses a compressed file which contains multiple files
 \details{
 Decompresses a compressed file which contains multiple files.
 }
+\examples{
+--
+}

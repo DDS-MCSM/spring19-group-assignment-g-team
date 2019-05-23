@@ -18,10 +18,10 @@
 # GroupAssignmentPackage::log_msg(verbose, "[*] Read RAW data from scans.io", "")
 # scansio.source <- file.path(getwd(), "data","scans.io.tcp21.csv")
 # scansio.file.gz <- paste(scansio.source, ".gz", sep = "")
-# download.file(url = scansio.url, destfile = scansio.file.gz)
-# GroupAssignmentPackage::decompress_data(verbose, scansio.file.gz, "gz", TRUE)
+# #download.file(url = scansio.url, destfile = scansio.file.gz)
+# #GroupAssignmentPackage::decompress_file(verbose, scansio.file.gz, "gz", TRUE)
 # df.tcp21 <- read.csv(scansio.source, stringsAsFactors = FALSE)
-#
+
 # # Maxmind - Obtener datos en crudo (city)
 # GroupAssignmentPackage::log_msg(verbose, "[*] Read RAW data from MaxMind", "")
 # maxmind.file <- file.path(getwd(), "data", "maxmind.zip")
@@ -40,11 +40,11 @@
 #
 # # Seleccionamos una muestra de scans
 # if (verbose) print("[*] Subseting scans data set")
-# df.tcp21$saddr.num <- iptools::ip_to_numeric(df.tcp21$saddr)
-# df.tcp21$daddr.num <- iptools::ip_to_numeric(df.tcp21$daddr)
-# muestra <- sample(1:nrow(df.tcp21), scope)
-# df.scans <- df.tcp21[muestra,]
-# rm(muestra)
+ # df.tcp21$saddr.num <- iptools::ip_to_numeric(df.tcp21$saddr)
+ # df.tcp21$daddr.num <- iptools::ip_to_numeric(df.tcp21$daddr)
+ # muestra <- sample(1:nrow(df.tcp21), scope)
+ # df.scans <- df.tcp21[muestra,]
+ # rm(muestra)
 #
 # # Para geolocalizar una IP en un rango comprobaremos si está entre la primera
 # # y la ultima ip de cada rango en MaxMind.
