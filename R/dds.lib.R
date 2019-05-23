@@ -207,10 +207,10 @@ get_subset_rows <- function (pData, pNumRows) {
 #'
 #' @examples --
 add_columns_for_lookup <- function (pVerbose, pDataFrame) {
+
   if (pVerbose) print("[*] Adding columns to dataframe, for looking up with MaxMind...")
-  colnames(pDataFrame)[colnames(pDataFrame) == "ï..srcip"] <- "srcip"
-  pDataFrame$srcip_num <- iptools::ip_to_numeric(pData$srcip)
-##  pDataFrame$srcip_num <- iptools::ip_to_numeric(pDataFrame$ï..srcip)
+
+  pDataFrame$srcip_num <- iptools::ip_to_numeric(pDataFrame$srcip)
   pDataFrame$dstip_num <- iptools::ip_to_numeric(pDataFrame$dstip)
 
   return (pDataFrame)
@@ -224,11 +224,17 @@ add_columns_for_lookup <- function (pVerbose, pDataFrame) {
 #' @export
 #'
 #' @examples --
-lookup_to_maxmind <- function (verbose, pData, pMaxMind) {
-  if (verbose) print("[*] Adding geolocation columns to dataframe, by looking up to MaxMind...")
+lookup_to_maxmind <- function (pVerbose, pAttacks, pMaxMind) {
+
+  if (pVerbose) print("[*] Adding geolocation columns to dataframe, by looking up to MaxMind...")
+
+  df.scans$sloc <- sapply(df.scans$saddr.num,
+                          function(ip)
+                            which((ip >= df.maxmind$min_numeric) &
+                                    (ip <= df.maxmind$max_numeric)))
 
 
-  return (pData)
+  return (pAttacks)
 }
 
 
@@ -246,10 +252,10 @@ main <- function () {
 
   df.attacks <- download_data(verbose, overwrite.data, testing)
   df.maxmind <- download_maxmind(verbose, overwrite.data, testing)
-  df.subset <- get_subset_rows(df.attacks, 10)
+  ##df.subset <- get_subset_rows(df.attacks, 10)
 
   # A df.attacks, afegir columnes per poder fer lookup amb maximind (transformar IP origen i destí a format numèric)
-  df.subset <- add_columns_for_lookup(TRUE, df.subset)
+  df.attacks <- add_columns_for_lookup(pVerbose, df.attacks)
 
 }
 

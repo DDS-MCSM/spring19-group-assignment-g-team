@@ -4,7 +4,7 @@
 \alias{add_columns_for_lookup}
 \title{Add columns for lookup}
 \usage{
-add_columns_for_lookup(verbose, pData)
+add_columns_for_lookup(pVerbose, pDataFrame)
 }
 \value{
 DataFrame with additional columns

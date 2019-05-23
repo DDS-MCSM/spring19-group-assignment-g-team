@@ -4,7 +4,7 @@
 \alias{download_maxmind}
 \title{Download maxmind}
 \usage{
-download_maxmind()
+download_maxmind(pVerbose, pOverwrite.data, pTesting)
 }
 \value{
 Returns a df with the GPS position of each registered network
