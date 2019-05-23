@@ -96,37 +96,39 @@ decompress_multifile <- function (pVerbose, pFile.name, pCompress.type, pDelete.
 #' @export
 #'
 #' @examples --
-download_data <- function () {
-  verbose <- TRUE
-  overwrite.data <- FALSE
-  testing <- TRUE
+download_data <- function (pVerbose, pOverwrite.data, pTesting) {
   local.data.folder <- file.path(getwd(), "data")
   local.data.filename <- "dataset.csv"
 
   # Initial Setup
-  log_msg(verbose, "[*] Initial setup", "")
-  if (testing) {
-    log_msg(verbose, "[*]   We're testing", "")
+  log_msg(pVerbose, "[*] Initial setup", "")
+  if (pTesting) {
+    log_msg(pVerbose, "[*]   We're testing", "")
     src.url.fullpath <- "https://www.unsw.adfa.edu.au/unsw-canberra-cyber/cybersecurity/ADFA-NB15-Datasets/a%20part%20of%20training%20and%20testing%20set/UNSW_NB15_testing-set.csv"
   } else {
-    log_msg(verbose, "[*]   We're NOT testing", "")
+    log_msg(pVerbose, "[*]   We're NOT testing", "")
     src.url.fullpath <- "https://www.unsw.adfa.edu.au/unsw-canberra-cyber/cybersecurity/ADFA-NB15-Datasets/UNSW-NB15_1.csv"
   }
 
   tini <- Sys.time()
-  #log_msg(verbose, paste("[*] Initial setup ", tini), "")
-  create_directory(verbose, local.data.folder)
+  #log_msg(pVerbose, paste("[*] Initial setup ", tini), "")
+  create_directory(pVerbose, local.data.folder)
   local.data.fullpath <- file.path(local.data.folder, local.data.filename)
 
   # Descargar datos en crudo
-  log_msg(verbose, "[*] Download RAW data", "")
-  if (overwrite.data | !file.exists(local.data.fullpath)) {
-    log_msg(verbose, "[*]   Raw data file has to be downloaded. Starting download.....", "")
+  log_msg(pVerbose, "[*] Download RAW data", "")
+  if (pOverwrite.data | !file.exists(local.data.fullpath)) {
+    log_msg(pVerbose, "[*]   Raw data file has to be downloaded. Starting download.....", "")
     download.file(url = src.url.fullpath, destfile = local.data.fullpath)
   } else {
-    log_msg(verbose, "[*]   Raw data file already exists. It will NOT be downloaded again.", "")
+    log_msg(pVerbose, "[*]   Raw data file already exists. It will NOT be downloaded again.", "")
   }
+
+  log_msg(pVerbose, "[*] Load data on the DataFrame.", "")
   df.attacks <- read.csv(local.data.fullpath, stringsAsFactors = FALSE)
+
+  ## Corregim el nom de la primera columna perquè es carrega incorrectament del fitxer (???)
+  colnames(df.attacks)[colnames(df.attacks) == "ï..srcip"] <- "srcip"
 
   return(df.attacks)
 }
@@ -139,34 +141,39 @@ download_data <- function () {
 #' @export
 #'
 #' @examples --
-download_maxmind <- function () {
-  verbose <- TRUE
-  overwrite.data <- FALSE
-  testing <- TRUE
+download_maxmind <- function (pVerbose, pOverwrite.data, pTesting) {
   local.data.folder <- file.path(getwd(), "data")
   local.data.filename <- "maxmind.zip"
   local.data.fullpath <- file.path(local.data.folder, local.data.filename)
   src.url <- "https://geolite.maxmind.com/download/geoip/database/GeoLite2-City-CSV.zip"
   output.file <- "geoftps.rds"
 
-  if (overwrite.data | !file.exists(local.data.fullpath)) {
-    log_msg(verbose, "[*] Read RAW data from MaxMind", "")
+  log_msg(pVerbose, "[*] ***** The parameter pTesting is ignored. It's only kept for future utilization *****")
+
+  if (pOverwrite.data | !file.exists(local.data.fullpath)) {
+    log_msg(pVerbose, "[*] Read RAW data from MaxMind", "")
     local.data.fullpath <- file.path(local.data.folder, local.data.filename)
     download.file(url = src.url, destfile = local.data.fullpath)
+  } else {
+    log_msg(pVerbose, "[*]   MaxMind file already exists. It will NOT be downloaded again.", "")
   }
-  log_msg(verbose, "[*] Decompressing files...", "")
-  zipfiles <- decompress_multifile(verbose, local.data.fullpath, "zip", TRUE)
+
+  log_msg(pVerbose, "[*] Decompressing files...", "")
+  zipfiles <- decompress_multifile(pVerbose, local.data.fullpath, "zip", TRUE)
   maxmind.source <- zipfiles$Name[grep(pattern = ".*GeoLite2-City-Blocks-IPv4.csv", x = zipfiles$Name)]
-  log_msg(verbose, "[*] Unzip file...", "")
+  log_msg(pVerbose, "[*] Unzipping file...", "")
   unzip(zipfile = local.data.fullpath, exdir = local.data.folder, files = maxmind.source)
   maxmind.source <- file.path(getwd(), "data", maxmind.source)
 
-  log_msg(verbose, "[*] Loading file into a dataframe...", "")
+  log_msg(pVerbose, "[*] Loading file into a dataframe...", "")
   df.maxmind <- read.csv(maxmind.source, stringsAsFactors = FALSE)
 
-  log_msg(verbose, "[*] Adding range boundaries for each network", "")
+  log_msg(pVerbose, "[*] Adding range boundaries to each network...", "")
   df.maxmind <- cbind(df.maxmind, iptools::range_boundaries(df.maxmind$network))
   df.maxmind$rowname <- as.integer(row.names(df.maxmind))
+
+  log_msg(pVerbose, "[*] Removing column Range, as it's duplicated...", "")
+  df.maxmind$range <- NULL
 
   rm(local.data.fullpath, zipfiles)
 
@@ -182,6 +189,9 @@ download_maxmind <- function () {
 #'
 #' @examples --
 get_subset_rows <- function (pData, pNumRows) {
+
+  log_msg(pVerbose, paste("[*] Generating a random selection of", pNumRows, "records..."), "")
+
   muestra <- sample(1:nrow(pData), pNumRows)
   df <- pData[muestra,]
 
@@ -196,13 +206,14 @@ get_subset_rows <- function (pData, pNumRows) {
 #' @export
 #'
 #' @examples --
-add_columns_for_lookup <- function (verbose, pData) {
-  if (verbose) print("[*] Adding columns to dataframe, for looking up with MaxMind...")
-##  pData$srcip_num <- iptools::ip_to_numeric(pData$dstip)
-  pData$srcip_num <- iptools::ip_to_numeric(pData$ï..srcip)
-  pData$dstip_num <- iptools::ip_to_numeric(pData$dstip)
+add_columns_for_lookup <- function (pVerbose, pDataFrame) {
+  if (pVerbose) print("[*] Adding columns to dataframe, for looking up with MaxMind...")
+  colnames(pDataFrame)[colnames(pDataFrame) == "ï..srcip"] <- "srcip"
+  pDataFrame$srcip_num <- iptools::ip_to_numeric(pData$srcip)
+##  pDataFrame$srcip_num <- iptools::ip_to_numeric(pDataFrame$ï..srcip)
+  pDataFrame$dstip_num <- iptools::ip_to_numeric(pDataFrame$dstip)
 
-  return (pData)
+  return (pDataFrame)
 }
 
 
@@ -219,6 +230,29 @@ lookup_to_maxmind <- function (verbose, pData, pMaxMind) {
 
   return (pData)
 }
+
+
+#' Main function, which calls the rest of functions
+#'
+#' @details Main function, which calls the rest of functions.
+#' @return Nothing
+#' @export
+#'
+#' @examples --
+main <- function () {
+  verbose <- TRUE
+  overwrite.data <- TRUE
+  testing <- TRUE
+
+  df.attacks <- download_data(verbose, overwrite.data, testing)
+  df.maxmind <- download_maxmind(verbose, overwrite.data, testing)
+  df.subset <- get_subset_rows(df.attacks, 10)
+
+  # A df.attacks, afegir columnes per poder fer lookup amb maximind (transformar IP origen i destí a format numèric)
+  df.subset <- add_columns_for_lookup(TRUE, df.subset)
+
+}
+
 
 #   pData$sloc <- sapply(pData$saddr.num,
 #                         function(ip)
