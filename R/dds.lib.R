@@ -116,19 +116,21 @@ download_data <- function (pVerbose, pOverwrite.data, pTesting) {
   local.data.fullpath <- file.path(local.data.folder, local.data.filename)
 
   # Descargar datos en crudo
-  log_msg(pVerbose, "[*] Download RAW data", "")
   if (pOverwrite.data | !file.exists(local.data.fullpath)) {
-    log_msg(pVerbose, "[*]   Raw data file has to be downloaded. Starting download.....", "")
+    log_msg(pVerbose, "[*]   Raw data file has to be downloaded.", "")
+    log_msg(pVerbose, "[*]   Downloading RAW data...", "")
     download.file(url = src.url.fullpath, destfile = local.data.fullpath)
   } else {
     log_msg(pVerbose, "[*]   Raw data file already exists. It will NOT be downloaded again.", "")
   }
 
-  log_msg(pVerbose, "[*] Load data on the DataFrame.", "")
+  log_msg(pVerbose, "[*] Loading data on the DataFrame...", "")
   df.attacks <- read.csv(local.data.fullpath, stringsAsFactors = FALSE)
 
   ## Corregim el nom de la primera columna perquè es carrega incorrectament del fitxer (???)
   colnames(df.attacks)[colnames(df.attacks) == "ï..srcip"] <- "srcip"
+
+  log_msg(pVerbose, "[*] Data loaded onto the DataFrame.", "")
 
   return(df.attacks)
 }
@@ -151,32 +153,40 @@ download_maxmind <- function (pVerbose, pOverwrite.data, pTesting) {
   log_msg(pVerbose, "[*] ***** The parameter pTesting is ignored. It's only kept for future utilization *****")
 
   if (pOverwrite.data | !file.exists(local.data.fullpath)) {
-    log_msg(pVerbose, "[*] Read RAW data from MaxMind", "")
+    log_msg(pVerbose, "[*]   Read RAW data from MaxMind", "")
     local.data.fullpath <- file.path(local.data.folder, local.data.filename)
     download.file(url = src.url, destfile = local.data.fullpath)
   } else {
     log_msg(pVerbose, "[*]   MaxMind file already exists. It will NOT be downloaded again.", "")
   }
 
-  log_msg(pVerbose, "[*] Decompressing files...", "")
+  log_msg(pVerbose, "[*]     Decompressing files...", "")
   zipfiles <- decompress_multifile(pVerbose, local.data.fullpath, "zip", TRUE)
   maxmind.source <- zipfiles$Name[grep(pattern = ".*GeoLite2-City-Blocks-IPv4.csv", x = zipfiles$Name)]
-  log_msg(pVerbose, "[*] Unzipping file...", "")
+  log_msg(pVerbose, "[*]     Unzipping file...", "")
   unzip(zipfile = local.data.fullpath, exdir = local.data.folder, files = maxmind.source)
   maxmind.source <- file.path(getwd(), "data", maxmind.source)
 
-  log_msg(pVerbose, "[*] Loading file into a dataframe...", "")
+  log_msg(pVerbose, "[*]     Loading file into a dataframe...", "")
   df.maxmind <- read.csv(maxmind.source, stringsAsFactors = FALSE)
 
-  log_msg(pVerbose, "[*] Adding range boundaries to each network...", "")
+  log_msg(pVerbose, "[*]     Adding range boundaries to each network...", "")
   df.maxmind <- cbind(df.maxmind, iptools::range_boundaries(df.maxmind$network))
   df.maxmind$rowname <- as.integer(row.names(df.maxmind))
 
-  log_msg(pVerbose, "[*] Removing column Range, as it's duplicated...", "")
+  log_msg(pVerbose, "[*]     Removing column Range, as it's duplicated...", "")
   df.maxmind$range <- NULL
 
+  log_msg(pVerbose, "[*]     Removing other columns that are not needed...", "")
+  df.maxmind$geoname_id <- NULL
+  df.maxmind$registered_country_geoname_id <- NULL
+  df.maxmind$represented_country_geoname_id <- NULL
+  df.maxmind$postal_code <- NULL
+
+  log_msg(pVerbose, "[*]     Cleaning local variables...", "")
   rm(local.data.fullpath, zipfiles)
 
+  log_msg(pVerbose, "[*]     Cleanup finished on MaxMind dataframe", "")
   return(df.maxmind)
 }
 
@@ -188,7 +198,7 @@ download_maxmind <- function (pVerbose, pOverwrite.data, pTesting) {
 #' @export
 #'
 #' @examples --
-get_subset_rows <- function (pData, pNumRows) {
+get_subset_rows <- function (pVerbose, pData, pNumRows) {
 
   log_msg(pVerbose, paste("[*] Generating a random selection of", pNumRows, "records..."), "")
 
@@ -228,15 +238,95 @@ lookup_to_maxmind <- function (pVerbose, pAttacks, pMaxMind) {
 
   if (pVerbose) print("[*] Adding geolocation columns to dataframe, by looking up to MaxMind...")
 
-  df.scans$sloc <- sapply(df.scans$saddr.num,
+  df.attacks$sloc <- sapply(df.attacks$srcip_num,
                           function(ip)
                             which((ip >= df.maxmind$min_numeric) &
                                     (ip <= df.maxmind$max_numeric)))
 
-
   return (pAttacks)
 }
 
+
+##################################################
+##################################################
+#' TBD.
+#'
+#' @details TBD.
+#' @return TBD
+#' @export
+#'
+#' @examples --
+addIPgeolocation <- function(ips = "", df.maxmind = data.frame(), boost = FALSE) {
+  # Para geolocalizar una IP en un rango comprobaremos si está entre la primera
+  # y la ultima ip de cada rango en MaxMind.
+
+  # if (all(iptools::is_ipv4(ips))) {
+  #   ips <- iptools::ip_to_numeric(ips)
+  # }
+  df <- data.frame(ip = as.numeric(ips))
+
+  if (boost) {
+    # Usamos multiples cpu's para geolocalizar IPs en rangos
+    no_cores <- parallel::detectCores() - 1
+    cl <- parallel::makeCluster(no_cores)
+    parallel::clusterExport(cl, "df.maxmind", envir = environment())
+    df$maxmind.rowname <- sapply(ips,
+                                 function(ip)
+                                   which((ip >= df.maxmind$min_numeric) &
+                                           (ip <= df.maxmind$max_numeric)))
+    parallel::stopCluster(cl)
+    rm(cl, no_cores)
+  } else {
+    df$maxmind.rowname <- sapply(ips,
+                                 function(ip)
+                                   which((ip >= df.maxmind$min_numeric) &
+                                           (ip <= df.maxmind$max_numeric)))
+  }
+
+  df <- dplyr::left_join(df, df.maxmind, by = c("maxmind.rowname" = "rowname"))
+
+  df <- dplyr::select(df, ip, network, latitude, longitude, accuracy_radius,
+                      is_anonymous_proxy, is_satellite_provider)
+
+  return(df)
+}
+
+
+#' TBD.
+#'
+#' @details TBD.
+#' @return TBD
+#' @export
+#'
+#' @examples --
+find_geolocation_data <- function(pVerbose, df.attacks, df.maxmind) {
+
+  log_msg(pVerbose, "[*] Adding Geolocation data...", "")
+  df <- df.attacks
+  scope = nrow(df)
+  geo.src <- addIPgeolocation(ips = df$srcip,
+                              df.maxmind = df.maxmind,
+                              boost = scope > 1000)
+  geo.dst <- addIPgeolocation(ips = df$dstip,
+                              df.maxmind = df.maxmind,
+                              boost = scope > 1000)
+
+  log_msg(pVerbose, "[*]     Tidy dataframe", "")
+  names(geo.src) <- paste("src_", names(geo.src), sep = "")
+  names(geo.dst) <- paste("dst_", names(geo.dst), sep = "")
+  # Preparamos el data frame
+  df <- dplyr::bind_cols(df, geo.src, geo.dst)
+
+  log_msg(pVerbose, "[*]     Selecting only the required fields...", "")
+  df <- dplyr::select(df, timestamp_ts, ttl,
+                      saddr, sport, src_network, src_latitude, src_longitude,
+                      src_accuracy_radius, src_is_anonymous_proxy, src_is_satellite_provider,
+                      daddr, dport, dst_network, dst_latitude, dst_longitude,
+                      dst_accuracy_radius, dst_is_anonymous_proxy, dst_is_satellite_provider)
+
+  log_msg(pVerbose, "[*]     Columns filtered. Returning dataframe.", "")
+  return(df)
+}
 
 #' Main function, which calls the rest of functions
 #'
@@ -247,26 +337,28 @@ lookup_to_maxmind <- function (pVerbose, pAttacks, pMaxMind) {
 #' @examples --
 main <- function () {
   verbose <- TRUE
-  overwrite.data <- TRUE
+  overwrite.data <- FALSE
   testing <- TRUE
+  scope_test <- 1
+  scope_prod <- 10
 
   df.attacks <- download_data(verbose, overwrite.data, testing)
+
   df.maxmind <- download_maxmind(verbose, overwrite.data, testing)
-  ##df.subset <- get_subset_rows(df.attacks, 10)
 
-  # A df.attacks, afegir columnes per poder fer lookup amb maximind (transformar IP origen i destí a format numèric)
-  df.attacks <- add_columns_for_lookup(pVerbose, df.attacks)
+  if (testing) {
+    log_msg(verbose, paste("[*] We are testing. Use a reduced scope of", scope_test, "records"), "")
+    scope <- scope_test
+  } else {
+    log_msg(verbose, paste("[*] This is not a test. Use a scope of", scope_prod, "records"), "")
+    scope <- scope_prod
+  }
+  df.attacks <- get_subset_rows(verbose, df.attacks, scope)
 
+  df.attacks <- add_columns_for_lookup(verbose, df.attacks)
+
+  df <- find_geolocation_data(verbose, df.attacks, df.maxmind)
+
+  summary(df)
 }
 
-
-#   pData$sloc <- sapply(pData$saddr.num,
-#                         function(ip)
-#                           which((ip >= pMaxMind$min_numeric) &
-#                                   (ip <= pMaxMind$max_numeric)))
-#   pData$dloc <- sapply(pData$daddr.num,
-#                         function(ip)
-#                           which((ip >= pMaxMind$min_numeric) &
-#                                   (ip <= pMaxMind$max_numeric)))
-#   return(pData)
-# }
