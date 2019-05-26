@@ -230,8 +230,8 @@ get_subset_rows <- function (pVerbose, pData, pNumRows) {
 
   log_msg(pVerbose, paste("[*] Generating a random selection of", pNumRows, "records..."), "")
 
-  muestra <- sample(1:nrow(pData), pNumRows)
-  df <- pData[muestra,]
+  muestra <- sample(10:nrow(pData), pNumRows)
+  df <- pData[muestra]
 
   return(df)
 }
@@ -275,12 +275,12 @@ lookup_to_maxmind <- function (pVerbose, pAttacks, pMaxMind) {
 }
 
 
-##################################################
-##################################################
-#' TBD.
+
+#' Añadir la Geolocalización de las IPs al dataframe
 #'
-#' @details TBD.
-#' @return TBD
+#' @details Añadimos la geolocalización de las IPS al dataframe definitivo a partir del dataset
+#'          de maxmind
+#' @return Dataframe final
 #' @export
 #'
 #' @examples --
@@ -320,10 +320,10 @@ addIPgeolocation <- function(ips = "", df.maxmind = data.frame(), boost = FALSE)
 }
 
 
-#' TBD.
+#' Buscamos la información GPS de cada IP y la añadimos al dataframe
 #'
 #' @details TBD.
-#' @return TBD
+#' @return Dataframe final definitivo con las columnas que nos interesan
 #' @export
 #'
 #' @examples --

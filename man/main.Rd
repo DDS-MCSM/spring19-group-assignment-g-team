@@ -7,13 +7,21 @@
 main()
 }
 \value{
-Nothing
+Retorna un resum del dataframe final
 }
 \description{
 Main function, which calls the rest of functions
 }
 \details{
-Main function, which calls the rest of functions.
+Main function, funció principal que crida la resta de funcions en l'rodre següent:
+- download_data
+
+
+I utilitza, addicionalment, les següents funcions auxiliars:
+- log_msg. Imprimeix per consola o a fitxer aquells missatges que el programador troba adequats a l'hora d'executar el codi
+- create_directory. Crea, si és necessari, un directori a l'espai de treball per tal de guardar-hi diferents arxius
+- decompress_file. Descomprimeix un fitxer que conté un arxiu i elimina el fitxer original
+- decompress_multifile. Descomprimeix un fitxer que conté més d'un arxiu i elimina el fitxer original
 }
 \examples{
 --

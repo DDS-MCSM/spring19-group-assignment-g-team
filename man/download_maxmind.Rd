@@ -2,18 +2,20 @@
 % Please edit documentation in R/dds.lib.R
 \name{download_maxmind}
 \alias{download_maxmind}
-\title{Download maxmind}
+\title{Download maxmind. Descarreguem de la web maxmind.com una base de dades amb la geolocalització de les
+IPs públiques mundials que té registrades.}
 \usage{
 download_maxmind(pVerbose, pOverwrite.data, pTesting)
 }
 \value{
-Returns a df with the GPS position of each registered network
+Obtenim un dataframe amb la posició GPS de les IPs resgistrades.
 }
 \description{
-Download maxmind
+Download maxmind. Descarreguem de la web maxmind.com una base de dades amb la geolocalització de les
+IPs públiques mundials que té registrades.
 }
 \details{
-Downloads maxmind file MaxMind site.
+Descarrega un fitxer maxmind de la web de maxmind.
 }
 \examples{
 --

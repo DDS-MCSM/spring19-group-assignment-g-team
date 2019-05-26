@@ -2,18 +2,18 @@
 % Please edit documentation in R/dds.lib.R
 \name{add_columns_for_lookup}
 \alias{add_columns_for_lookup}
-\title{Add columns for lookup}
+\title{Afegim columnes per tal de fer la recerca a Maxmind.}
 \usage{
 add_columns_for_lookup(pVerbose, pDataFrame)
 }
 \value{
-DataFrame with additional columns
+Obtenim el DataFrame que busquem amb columnes addicionals.
 }
 \description{
-Add columns for lookup
+Afegim columnes per tal de fer la recerca a Maxmind.
 }
 \details{
-Adds the required columns that will be used for the lookup with Maxmind.
+Afegim les columnes necessàries per tal de fer la recerca de les IPs del dataset al dataset de Maxmind.
 }
 \examples{
 --

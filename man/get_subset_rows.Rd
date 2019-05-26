@@ -2,15 +2,17 @@
 % Please edit documentation in R/dds.lib.R
 \name{get_subset_rows}
 \alias{get_subset_rows}
-\title{Get subset of rows}
+\title{Generem una part del dataframe, reduït a un cert nombre de files. El nombre de files es genera
+de manera al·leatòria a partir de pData.}
 \usage{
-get_subset_rows(pData, pNumRows)
+get_subset_rows(pVerbose, pData, pNumRows)
 }
 \value{
-Returns a df with only the requested pNumRows from pData
+Obtenim el df que busquem amb un nombre de files indicat per pNumRows provinent de pData.
 }
 \description{
-Get subset of rows
+Generem una part del dataframe, reduït a un cert nombre de files. El nombre de files es genera
+de manera al·leatòria a partir de pData.
 }
 \details{
 Selects (randomly) a number of rows from pData.
