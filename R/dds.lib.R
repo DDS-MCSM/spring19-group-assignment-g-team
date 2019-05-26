@@ -330,8 +330,16 @@ find_geolocation_data <- function(pVerbose, df.attacks, df.maxmind) {
 
 #' Main function, which calls the rest of functions
 #'
-#' @details Main function, which calls the rest of functions.
-#' @return Nothing
+#' @details Main function, funció principal que crida la resta de funcions en l'rodre següent:
+#'
+#'
+#'
+#' I utilitza, addicionalment, les següents funcions auxiliars:
+#' - log_msg. Imprimeix per consola o a fitxer aquells missatges que el programador troba adequats a l'hora d'executar el codi
+#' - create_directory. Crea, si és necessari, un directori a l'espai de treball per tal de guardar-hi diferents arxius
+#' - decompress_file. Descomprimeix un fitxer que conté un arxiu i elimina el fitxer original
+#' - decompress_multifile. Descomprimeix un fitxer que conté més d'un arxiu i elimina el fitxer original
+#' @return Retorna un resum del dataframe final
 #' @export
 #'
 #' @examples --
