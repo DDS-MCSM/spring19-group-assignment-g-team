@@ -92,11 +92,32 @@ decompress_multifile <- function (pVerbose, pFile.name, pCompress.type, pDelete.
 }
 
 
-
-#' Download data
+#' Download data. Descarreguem un dataset de la web UNSV ADFA amb informació sobre diferents tipus d'atacs
+#' El fitxer original, RAW, amb els paquets de xarxa continugts al dataset UNSW-NB 15 ha sigut generat per
+#' una eina, IXIA PerfectStorm, en un dels laboratoris del Australian Centre for Cyber Security (ACCS)
+#' amb l'objectiu de generar un model híbrid entre les activitats normals en la realitat i els
+#' comportaments d'atacs sintètics.
+#' L'eina Tcpdump s'ha utilitzat per capturar 100GB de traffic (en Pcap files de Wireshark, p.e.)
+#' El dataset conté 9 tipus diferents d'atacs:
+#' - Fuzzers
+#' - Analysis
+#' - Backdoors
+#' - DoS
+#' - Exploits
+#' - Generic
+#' - Reconnaissance
+#' - Shellcode
+#' - Worms.
+#' També s'han utilitzat eines com The Argus o Bro-IDS tools o desenvolupat fins a 12 algorismes per generar
+#' un total de 49 funcionalitats.
 #'
-#' @details Downloads data from UNSV ADFA.
-#' @return nothing.
+#' Els fitxers que podriem descarregar són:
+#' Per a training: 175,341 registres, tan de paquets normals com d'atacs
+#' Per a testing: 82,332 registres, tan de paquets normals com d'atacs
+#'
+#' En aquest projecte, ens centrarem en els atacs per denegació de servei, DoS
+#' @details Descarreguem un dataset de UNSV ADFA.
+#' @return Retorna una primera versió del dataframe corresponent als atacs.
 #' @export
 #'
 #' @examples --
@@ -104,8 +125,9 @@ download_data <- function (pVerbose, pOverwrite.data, pTesting) {
   local.data.folder <- file.path(getwd(), "data")
   local.data.filename <- "dataset.csv"
 
-  # Initial Setup
+# Initial Setup
   log_msg(pVerbose, "[*] Initial setup", "")
+# En cas que triem el fitxer per a testejar
   if (pTesting) {
     log_msg(pVerbose, "[*]   We're testing", "")
     #src.url.fullpath <- "https://www.unsw.adfa.edu.au/unsw-canberra-cyber/cybersecurity/ADFA-NB15-Datasets/a%20part%20of%20training%20and%20testing%20set/UNSW_NB15_testing-set.csv"
@@ -118,19 +140,18 @@ download_data <- function (pVerbose, pOverwrite.data, pTesting) {
   create_directory(pVerbose, local.data.folder)
   local.data.fullpath <- file.path(local.data.folder, local.data.filename)
 
-  # Descargar datos en crudo
+# Descargar datos en crudo
   if (pOverwrite.data | !file.exists(local.data.fullpath)) {
     log_msg(pVerbose, "[*]   Raw data file has to be downloaded.", "")
     log_msg(pVerbose, "[*]   Downloading RAW data...", "")
     download.file(url = src.url.fullpath, destfile = local.data.fullpath)
-  } else {
+  }
+  else {
     log_msg(pVerbose, "[*]   Raw data file already exists. It will NOT be downloaded again.", "")
   }
 
   log_msg(pVerbose, "[*] Loading data on the DataFrame...", "")
   df.attacks <- read.csv(local.data.fullpath, stringsAsFactors = FALSE)
-
-  #file.remove(local.data.fullpath)
 
   ## Corregim el nom de la primera columna perquè es carrega incorrectament del fitxer (???)
   colnames(df.attacks)[colnames(df.attacks) == "ï..srcip"] <- "srcip"
@@ -143,11 +164,11 @@ download_data <- function (pVerbose, pOverwrite.data, pTesting) {
 }
 
 
-
-#' Download maxmind
+#' Download maxmind. Descarreguem de la web maxmind.com una base de dades amb la geolocalització de les
+#' IPs públiques mundials que té registrades.
 #'
-#' @details Downloads maxmind file MaxMind site.
-#' @return Returns a df with the GPS position of each registered network
+#' @details Descarrega un fitxer maxmind de la web de maxmind.
+#' @return Obtenim un dataframe amb la posició GPS de les IPs resgistrades.
 #' @export
 #'
 #' @examples --
@@ -202,11 +223,11 @@ download_maxmind <- function (pVerbose, pOverwrite.data, pTesting) {
 }
 
 
-
-#' Get subset of rows
+#' Generem una part del dataframe, reduït a un cert nombre de files. El nombre de files es genera
+#' de manera al·leatòria a partir de pData.
 #'
 #' @details Selects (randomly) a number of rows from pData.
-#' @return Returns a df with only the requested pNumRows from pData
+#' @return Obtenim el df que busquem amb un nombre de files indicat per pNumRows provinent de pData.
 #' @export
 #'
 #' @examples --
@@ -215,18 +236,17 @@ get_subset_rows <- function (pVerbose, pData, pNumRows, pSeed) {
   set.seed(pSeed)
   log_msg(pVerbose, paste("[*] Generating a random selection of", pNumRows, "records..."), "")
 
-  muestra <- sample(1:nrow(pData), pNumRows)
-  df <- pData[muestra,]
+  muestra <- sample(10:nrow(pData), pNumRows)
+  df <- pData[muestra]
 
   return(df)
 }
 
 
-
-#' Add columns for lookup
+#' Afegim columnes per tal de fer la recerca a Maxmind.
 #'
-#' @details Adds the required columns that will be used for the lookup with Maxmind.
-#' @return DataFrame with additional columns
+#' @details Afegim les columnes necessàries per tal de fer la recerca de les IPs del dataset al dataset de Maxmind.
+#' @return Obtenim el DataFrame que busquem amb columnes addicionals.
 #' @export
 #'
 #' @examples --
@@ -263,14 +283,11 @@ lookup_to_maxmind <- function (pVerbose, pAttacks, pMaxMind) {
 
 
 
-#' Given a vector of IP addresses it returns a data frame with
-#' the IP addresses and its geolocation data (lat, long, accuracy and more).
+#' Añadir la Geolocalización de las IPs al dataframe
 #'
-#' @param ips array of characters of IPv4 addresses
-#' @param df.maxmind data frame from download.maxmind function
-#' @param boost logical default set as FALSE, if TRUE it will use parallel computing using multiple cores
-#'
-#' @return data.frame
+#' @details Añadimos la geolocalización de las IPS al dataframe definitivo a partir del dataset
+#'          de maxmind
+#' @return Dataframe final
 #' @export
 #'
 #' @examples
@@ -314,11 +331,10 @@ addIPgeolocation <- function(ips = "", df.maxmind = data.frame(), boost = FALSE)
 }
 
 
-
-#' TBD.
+#' Buscamos la información GPS de cada IP y la añadimos al dataframe
 #'
 #' @details TBD.
-#' @return TBD
+#' @return Dataframe final definitivo con las columnas que nos interesan
 #' @export
 #'
 #' @examples --
@@ -353,8 +369,16 @@ find_geolocation_data <- function(pVerbose, df.attacks, df.maxmind) {
 
 #' Main function, which calls the rest of functions
 #'
-#' @details Main function, which calls the rest of functions.
-#' @return Nothing
+#' @details Main function, funció principal que crida la resta de funcions en l'rodre següent:
+#' - download_data
+#'
+#'
+#' I utilitza, addicionalment, les següents funcions auxiliars:
+#' - log_msg. Imprimeix per consola o a fitxer aquells missatges que el programador troba adequats a l'hora d'executar el codi
+#' - create_directory. Crea, si és necessari, un directori a l'espai de treball per tal de guardar-hi diferents arxius
+#' - decompress_file. Descomprimeix un fitxer que conté un arxiu i elimina el fitxer original
+#' - decompress_multifile. Descomprimeix un fitxer que conté més d'un arxiu i elimina el fitxer original
+#' @return Retorna un resum del dataframe final
 #' @export
 #'
 #' @examples --

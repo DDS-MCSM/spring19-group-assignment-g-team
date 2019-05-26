@@ -2,18 +2,39 @@
 % Please edit documentation in R/dds.lib.R
 \name{download_data}
 \alias{download_data}
-\title{Download data}
+\title{Download data. Descarreguem un dataset de la web UNSV ADFA amb informació sobre diferents tipus d'atacs
+El fitxer original, RAW, amb els paquets de xarxa continugts al dataset UNSW-NB 15 ha sigut generat per
+una eina, IXIA PerfectStorm, en un dels laboratoris del Australian Centre for Cyber Security (ACCS)
+amb l'objectiu de generar un model híbrid entre les activitats normals en la realitat i els
+comportaments d'atacs sintètics.
+L'eina Tcpdump s'ha utilitzat per capturar 100GB de traffic (en Pcap files de Wireshark, p.e.)
+El dataset conté 9 tipus diferents d'atacs:
+- Fuzzers
+- Analysis
+- Backdoors
+- DoS
+- Exploits
+- Generic
+- Reconnaissance
+- Shellcode
+- Worms.
+També s'han utilitzat eines com The Argus o Bro-IDS tools o desenvolupat fins a 12 algorismes per generar
+un total de 49 funcionalitats.}
 \usage{
 download_data(pVerbose, pOverwrite.data, pTesting)
 }
 \value{
-nothing.
+Retorna una primera versió del dataframe corresponent als atacs.
 }
 \description{
-Download data
+Els fitxers que podriem descarregar són:
+Per a training: 175,341 registres, tan de paquets normals com d'atacs
+Per a testing: 82,332 registres, tan de paquets normals com d'atacs
 }
 \details{
-Downloads data from UNSV ADFA.
+En aquest projecte, ens centrarem en els atacs per denegació de servei, DoS
+
+Descarreguem un dataset de UNSV ADFA.
 }
 \examples{
 --
