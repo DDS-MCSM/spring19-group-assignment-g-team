@@ -17,6 +17,7 @@ log_msg <- function(pVerbose, pMessage, pLogFile) {
 }
 
 
+
 #' Creates a directory.
 #'
 #' @details Creates a directory.
@@ -36,6 +37,7 @@ create_directory <- function(pVerbose, pDirectory) {
   }
   log_msg(pVerbose, stringi::stri_paste("[*]   ", pDirectory), "")
 }
+
 
 
 #' Decompresses a file.
@@ -61,6 +63,7 @@ decompress_file <- function (pVerbose, pFile.name, pCompress.type, pDelete.file)
     rm(pFile.name)
   }
 }
+
 
 
 #' Decompresses a compressed file which contains multiple files
@@ -89,6 +92,7 @@ decompress_multifile <- function (pVerbose, pFile.name, pCompress.type, pDelete.
 }
 
 
+
 #' Download data
 #'
 #' @details Downloads data from UNSV ADFA.
@@ -104,14 +108,13 @@ download_data <- function (pVerbose, pOverwrite.data, pTesting) {
   log_msg(pVerbose, "[*] Initial setup", "")
   if (pTesting) {
     log_msg(pVerbose, "[*]   We're testing", "")
-    src.url.fullpath <- "https://www.unsw.adfa.edu.au/unsw-canberra-cyber/cybersecurity/ADFA-NB15-Datasets/a%20part%20of%20training%20and%20testing%20set/UNSW_NB15_testing-set.csv"
+    #src.url.fullpath <- "https://www.unsw.adfa.edu.au/unsw-canberra-cyber/cybersecurity/ADFA-NB15-Datasets/a%20part%20of%20training%20and%20testing%20set/UNSW_NB15_testing-set.csv"
+    src.url.fullpath <- "https://www.unsw.adfa.edu.au/unsw-canberra-cyber/cybersecurity/ADFA-NB15-Datasets/UNSW-NB15_1.csv"
   } else {
     log_msg(pVerbose, "[*]   We're NOT testing", "")
     src.url.fullpath <- "https://www.unsw.adfa.edu.au/unsw-canberra-cyber/cybersecurity/ADFA-NB15-Datasets/UNSW-NB15_1.csv"
   }
 
-  tini <- Sys.time()
-  #log_msg(pVerbose, paste("[*] Initial setup ", tini), "")
   create_directory(pVerbose, local.data.folder)
   local.data.fullpath <- file.path(local.data.folder, local.data.filename)
 
@@ -127,13 +130,18 @@ download_data <- function (pVerbose, pOverwrite.data, pTesting) {
   log_msg(pVerbose, "[*] Loading data on the DataFrame...", "")
   df.attacks <- read.csv(local.data.fullpath, stringsAsFactors = FALSE)
 
+  #file.remove(local.data.fullpath)
+
   ## Corregim el nom de la primera columna perquè es carrega incorrectament del fitxer (???)
   colnames(df.attacks)[colnames(df.attacks) == "ï..srcip"] <- "srcip"
-
   log_msg(pVerbose, "[*] Data loaded onto the DataFrame.", "")
+
+  saveRDS(object = df.attacks, file = file.path(local.data.folder, "attacks.rds"))
+  log_msg(pVerbose, "[*] Source Data saved in RDS file.", "")
 
   return(df.attacks)
 }
+
 
 
 #' Download maxmind
@@ -170,6 +178,9 @@ download_maxmind <- function (pVerbose, pOverwrite.data, pTesting) {
   log_msg(pVerbose, "[*]     Loading file into a dataframe...", "")
   df.maxmind <- read.csv(maxmind.source, stringsAsFactors = FALSE)
 
+  #file.remove(maxmind.source)
+  unlink(file.path(local.data.folder, "GeoLite2-City-CSV_*"), recursive = T)
+
   log_msg(pVerbose, "[*]     Adding range boundaries to each network...", "")
   df.maxmind <- cbind(df.maxmind, iptools::range_boundaries(df.maxmind$network))
   df.maxmind$rowname <- as.integer(row.names(df.maxmind))
@@ -182,13 +193,14 @@ download_maxmind <- function (pVerbose, pOverwrite.data, pTesting) {
   df.maxmind$registered_country_geoname_id <- NULL
   df.maxmind$represented_country_geoname_id <- NULL
   df.maxmind$postal_code <- NULL
-
-  log_msg(pVerbose, "[*]     Cleaning local variables...", "")
-  rm(local.data.fullpath, zipfiles)
-
   log_msg(pVerbose, "[*]     Cleanup finished on MaxMind dataframe", "")
+
+  saveRDS(object = df.maxmind, file = file.path(local.data.folder, "maxmind.rds"))
+  log_msg(pVerbose, "[*] MaxMind Data saved in RDS file.", "")
+
   return(df.maxmind)
 }
+
 
 
 #' Get subset of rows
@@ -198,8 +210,9 @@ download_maxmind <- function (pVerbose, pOverwrite.data, pTesting) {
 #' @export
 #'
 #' @examples --
-get_subset_rows <- function (pVerbose, pData, pNumRows) {
+get_subset_rows <- function (pVerbose, pData, pNumRows, pSeed) {
 
+  set.seed(pSeed)
   log_msg(pVerbose, paste("[*] Generating a random selection of", pNumRows, "records..."), "")
 
   muestra <- sample(1:nrow(pData), pNumRows)
@@ -207,6 +220,7 @@ get_subset_rows <- function (pVerbose, pData, pNumRows) {
 
   return(df)
 }
+
 
 
 #' Add columns for lookup
@@ -227,6 +241,7 @@ add_columns_for_lookup <- function (pVerbose, pDataFrame) {
 }
 
 
+
 #' Lookup to Maxmind to get geolocation (Lat, Lon, Accuracy) of IP_Ori and IP_Dest.
 #'
 #' @details Adds the geolocation columns into the DataFrame, by looking up to Maxmind through srcip_num and dstip_num.
@@ -239,30 +254,37 @@ lookup_to_maxmind <- function (pVerbose, pAttacks, pMaxMind) {
   if (pVerbose) print("[*] Adding geolocation columns to dataframe, by looking up to MaxMind...")
 
   df.attacks$sloc <- sapply(df.attacks$srcip_num,
-                          function(ip)
-                            which((ip >= df.maxmind$min_numeric) &
-                                    (ip <= df.maxmind$max_numeric)))
+                            function(ip)
+                              which((ip >= df.maxmind$min_numeric) &
+                                      (ip <= df.maxmind$max_numeric)))
 
   return (pAttacks)
 }
 
 
-##################################################
-##################################################
-#' TBD.
+
+#' Given a vector of IP addresses it returns a data frame with
+#' the IP addresses and its geolocation data (lat, long, accuracy and more).
 #'
-#' @details TBD.
-#' @return TBD
+#' @param ips array of characters of IPv4 addresses
+#' @param df.maxmind data frame from download.maxmind function
+#' @param boost logical default set as FALSE, if TRUE it will use parallel computing using multiple cores
+#'
+#' @return data.frame
 #' @export
 #'
-#' @examples --
+#' @examples
+#' \dontrun{
+#' geoips <- addIPgeolocation(ips = c("8.8.8.8", "147.81.23.1"),
+#'                            df.maxmind = download.maxmind())
+#' }
 addIPgeolocation <- function(ips = "", df.maxmind = data.frame(), boost = FALSE) {
   # Para geolocalizar una IP en un rango comprobaremos si está entre la primera
   # y la ultima ip de cada rango en MaxMind.
 
-  # if (all(iptools::is_ipv4(ips))) {
-  #   ips <- iptools::ip_to_numeric(ips)
-  # }
+  if (all(iptools::is_ipv4(ips))) {
+    ips <- iptools::ip_to_numeric(ips)
+  }
   df <- data.frame(ip = as.numeric(ips))
 
   if (boost) {
@@ -292,6 +314,7 @@ addIPgeolocation <- function(ips = "", df.maxmind = data.frame(), boost = FALSE)
 }
 
 
+
 #' TBD.
 #'
 #' @details TBD.
@@ -318,15 +341,15 @@ find_geolocation_data <- function(pVerbose, df.attacks, df.maxmind) {
   df <- dplyr::bind_cols(df, geo.src, geo.dst)
 
   log_msg(pVerbose, "[*]     Selecting only the required fields...", "")
-  df <- dplyr::select(df, timestamp_ts, ttl,
-                      saddr, sport, src_network, src_latitude, src_longitude,
-                      src_accuracy_radius, src_is_anonymous_proxy, src_is_satellite_provider,
-                      daddr, dport, dst_network, dst_latitude, dst_longitude,
-                      dst_accuracy_radius, dst_is_anonymous_proxy, dst_is_satellite_provider)
+  df <- dplyr::select(df, attack_cat,
+                      srcip, sport, src_latitude, src_longitude, src_accuracy_radius,
+                      dstip, dsport, dst_latitude, dst_longitude, dst_accuracy_radius)
 
   log_msg(pVerbose, "[*]     Columns filtered. Returning dataframe.", "")
   return(df)
 }
+
+
 
 #' Main function, which calls the rest of functions
 #'
@@ -339,8 +362,7 @@ main <- function () {
   verbose <- TRUE
   overwrite.data <- FALSE
   testing <- TRUE
-  scope_test <- 1
-  scope_prod <- 10
+  scope_test <- 3
 
   df.attacks <- download_data(verbose, overwrite.data, testing)
 
@@ -349,11 +371,10 @@ main <- function () {
   if (testing) {
     log_msg(verbose, paste("[*] We are testing. Use a reduced scope of", scope_test, "records"), "")
     scope <- scope_test
+    df.attacks <- get_subset_rows(verbose, df.attacks, scope, 666)
   } else {
     log_msg(verbose, paste("[*] This is not a test. Use a scope of", scope_prod, "records"), "")
-    scope <- scope_prod
   }
-  df.attacks <- get_subset_rows(verbose, df.attacks, scope)
 
   df.attacks <- add_columns_for_lookup(verbose, df.attacks)
 
@@ -361,4 +382,3 @@ main <- function () {
 
   summary(df)
 }
-
