@@ -143,6 +143,7 @@ download_data <- function (pVerbose, pOverwrite.data, pTesting) {
     log_msg(pVerbose, "[*]   Raw data file already exists. It will NOT be downloaded again.", "")
     log_msg(pVerbose, "[*]   Loading existing file on the DataFrame...", "")
   }
+
   df.attacks <- read.csv(local.data.fullpath, stringsAsFactors = FALSE)
   log_msg(pVerbose, "[*]   Adding header to DataFrame...", "")
   colnames(df.attacks) <- c("srcip","sport","dstip","dsport","proto","state","dur","sbytes","dbytes","sttl","dttl","sloss","dloss","service","Sload","Dload","Spkts","Dpkts","swin","dwin","stcpb","dtcpb","smeansz","dmeansz","trans_depth","res_bdy_len","Sjit","Djit","Stime","Ltime","Sintpkt","Dintpkt","tcprtt","synack","ackdat","is_sm_ips_ports","ct_state_ttl","ct_flw_http_mthd","is_ftp_login","ct_ftp_cmd","ct_srv_src","ct_srv_dst","ct_dst_ltm","ct_src_ltm","ct_src_dport_ltm","ct_dst_sport_ltm","ct_dst_src_ltm","attack_cat","Label")
@@ -288,11 +289,14 @@ download_maxmind <- function (pVerbose, pOverwrite.data, pTesting) {
 get_subset_rows <- function (pVerbose, pData, pNumRows, pSeed) {
 
   set.seed(pSeed)
+
   log_msg(pVerbose, paste("[*] Generating a random selection of", pNumRows, "records..."), "")
+  muestra <- sample(1:nrow(pData), pNumRows)
 
-  muestra <- sample(10:nrow(pData), pNumRows)
-  df <- pData[muestra]
+  log_msg(pVerbose, "[*] Getting the subset of records...", "")
+  df <- pData[muestra, ]
 
+  log_msg(pVerbose, "[*] Done. Returning subset.", "")
   return(df)
 }
 
@@ -441,6 +445,7 @@ main <- function (verbose = TRUE, overwrite.data = FALSE, testing = FALSE, scope
   # overwrite.data <- FALSE
   # testing <- FALSE
   # scope_test <- 10
+  local.data.folder <- file.path(getwd(), "data")
 
   df.attacks <- download_data(verbose, overwrite.data, testing)
 
@@ -458,4 +463,9 @@ main <- function (verbose = TRUE, overwrite.data = FALSE, testing = FALSE, scope
   df <- find_geolocation_data(verbose, df.attacks, df.maxmind)
 
   summary(df)
+
+  saveRDS(object = df, file = file.path(local.data.folder, "results.rds"))
+  log_msg(verbose, "[*] Results DataFrame saved in RDS file.", "")
+
+  return(df)
 }
