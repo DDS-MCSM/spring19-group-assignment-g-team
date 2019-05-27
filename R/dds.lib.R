@@ -123,52 +123,69 @@ decompress_multifile <- function (pVerbose, pFile.name, pCompress.type, pDelete.
 #' @examples --
 download_data <- function (pVerbose, pOverwrite.data, pTesting) {
   local.data.folder <- file.path(getwd(), "data")
-  local.data.filename <- "dataset"
+  local.data.filename <- "mendeley.csv"
 
   create_directory(pVerbose, local.data.folder)
-  local.data.fullpath <- file.path(local.data.folder, paste(local.data.filename, "1", ".csv", sep=""))
+  local.data.fullpath <- file.path(local.data.folder, paste(local.data.filename))
 
   # Initial Setup
   log_msg(pVerbose, "[*] Initial setup", "")
 
-  # Descargar datos en crudo
-  if (pOverwrite.data | !file.exists(local.data.fullpath)) {
-    log_msg(pVerbose, "[*]   Raw data file has to be downloaded.", "")
-    src.url.fullpath <- "https://www.unsw.adfa.edu.au/unsw-canberra-cyber/cybersecurity/ADFA-NB15-Datasets/UNSW-NB15_1.csv"
-    log_msg(pVerbose, "[*]   Downloading RAW data...", "")
-    download.file(url = src.url.fullpath, destfile = local.data.fullpath)
-    log_msg(pVerbose, "[*]   Loading fresh data on the DataFrame...", "")
-  }
-  else {
-    log_msg(pVerbose, "[*]   Raw data file already exists. It will NOT be downloaded again.", "")
-    log_msg(pVerbose, "[*]   Loading existing file on the DataFrame...", "")
-  }
-
-  df.attacks <- read.csv(local.data.fullpath, stringsAsFactors = FALSE)
+  log_msg(pVerbose, "[*]   Loading existing file on the DataFrame...", "")
+  df.attacks <- read.csv(local.data.fullpath, stringsAsFactors = FALSE, sep=";")
   log_msg(pVerbose, "[*]   Adding header to DataFrame...", "")
-  colnames(df.attacks) <- c("srcip","sport","dstip","dsport","proto","state","dur","sbytes","dbytes","sttl","dttl","sloss","dloss","service","Sload","Dload","Spkts","Dpkts","swin","dwin","stcpb","dtcpb","smeansz","dmeansz","trans_depth","res_bdy_len","Sjit","Djit","Stime","Ltime","Sintpkt","Dintpkt","tcprtt","synack","ackdat","is_sm_ips_ports","ct_state_ttl","ct_flw_http_mthd","is_ftp_login","ct_ftp_cmd","ct_srv_src","ct_srv_dst","ct_dst_ltm","ct_src_ltm","ct_src_dport_ltm","ct_dst_sport_ltm","ct_dst_src_ltm","attack_cat","Label")
-  log_msg(pVerbose, "[*]   Keeping only Dos records...", "")
-  df.attacks <- df.attacks[df.attacks$attack_cat == "DoS", ]
+  colnames(df.attacks) <- c("timestamp", "srcip","sport","dstip","dsport","packets","proto")
 
-  if (!pTesting) {
-    local.data.fullpath <- file.path(local.data.folder, paste(local.data.filename, "2", ".csv", sep=""))
-    if (pOverwrite.data | !file.exists(local.data.fullpath)) {
-      log_msg(pVerbose, "[*]   We're NOT testing. So downloading more files...", "")
-      src.url.fullpath <- "https://www.unsw.adfa.edu.au/unsw-canberra-cyber/cybersecurity/ADFA-NB15-Datasets/UNSW-NB15_2.csv"
-      download.file(url = src.url.fullpath, destfile = local.data.fullpath)
-      log_msg(pVerbose, "[*] Loading second set of data on the DataFrame...", "")
-    }
-    else {
-      log_msg(pVerbose, "[*]   Raw data file already exists. It will NOT be downloaded again.", "")
-      log_msg(pVerbose, "[*]   Loading existing file on the DataFrame...", "")
-    }
-    d2 <- read.csv(local.data.fullpath, stringsAsFactors = FALSE)
-    log_msg(pVerbose, "[*]   Adding header to temp DataFrame...", "")
-    colnames(d2) <- c("srcip","sport","dstip","dsport","proto","state","dur","sbytes","dbytes","sttl","dttl","sloss","dloss","service","Sload","Dload","Spkts","Dpkts","swin","dwin","stcpb","dtcpb","smeansz","dmeansz","trans_depth","res_bdy_len","Sjit","Djit","Stime","Ltime","Sintpkt","Dintpkt","tcprtt","synack","ackdat","is_sm_ips_ports","ct_state_ttl","ct_flw_http_mthd","is_ftp_login","ct_ftp_cmd","ct_srv_src","ct_srv_dst","ct_dst_ltm","ct_src_ltm","ct_src_dport_ltm","ct_dst_sport_ltm","ct_dst_src_ltm","attack_cat","Label")
-    log_msg(pVerbose, "[*]   Keeping only Dos records from temp Dataframe...", "")
-    d2 <- d2[d2$attack_cat == "DoS", ]
-    log_msg(pVerbose, "[*]   Appending 2nd set of data on the DataFrame...", "")
-    df.attacks <- rbind(df.attacks, d2)
+
+
+
+# local.data.folder <- file.path(getwd(), "data")
+# local.data.filename <- "dataset"
+#
+# create_directory(pVerbose, local.data.folder)
+# local.data.fullpath <- file.path(local.data.folder, paste(local.data.filename, "1", ".csv", sep=""))
+#
+# # Initial Setup
+# log_msg(pVerbose, "[*] Initial setup", "")
+#
+# # Descargar datos en crudo
+# if (pOverwrite.data | !file.exists(local.data.fullpath)) {
+#   log_msg(pVerbose, "[*]   Raw data file has to be downloaded.", "")
+#   src.url.fullpath <- "https://www.unsw.adfa.edu.au/unsw-canberra-cyber/cybersecurity/ADFA-NB15-Datasets/UNSW-NB15_1.csv"
+#   log_msg(pVerbose, "[*]   Downloading RAW data...", "")
+#   download.file(url = src.url.fullpath, destfile = local.data.fullpath)
+#   log_msg(pVerbose, "[*]   Loading fresh data on the DataFrame...", "")
+# }
+# else {
+#   log_msg(pVerbose, "[*]   Raw data file already exists. It will NOT be downloaded again.", "")
+#   log_msg(pVerbose, "[*]   Loading existing file on the DataFrame...", "")
+# }
+#
+# df.attacks <- read.csv(local.data.fullpath, stringsAsFactors = FALSE)
+# log_msg(pVerbose, "[*]   Adding header to DataFrame...", "")
+# colnames(df.attacks) <- c("srcip","sport","dstip","dsport","proto","state","dur","sbytes","dbytes","sttl","dttl","sloss","dloss","service","Sload","Dload","Spkts","Dpkts","swin","dwin","stcpb","dtcpb","smeansz","dmeansz","trans_depth","res_bdy_len","Sjit","Djit","Stime","Ltime","Sintpkt","Dintpkt","tcprtt","synack","ackdat","is_sm_ips_ports","ct_state_ttl","ct_flw_http_mthd","is_ftp_login","ct_ftp_cmd","ct_srv_src","ct_srv_dst","ct_dst_ltm","ct_src_ltm","ct_src_dport_ltm","ct_dst_sport_ltm","ct_dst_src_ltm","attack_cat","Label")
+# log_msg(pVerbose, "[*]   Keeping only Dos records...", "")
+# df.attacks <- df.attacks[df.attacks$attack_cat == "DoS", ]
+#
+# if (!pTesting) {
+#   local.data.fullpath <- file.path(local.data.folder, paste(local.data.filename, "2", ".csv", sep=""))
+#   if (pOverwrite.data | !file.exists(local.data.fullpath)) {
+#     log_msg(pVerbose, "[*]   We're NOT testing. So downloading more files...", "")
+#     src.url.fullpath <- "https://www.unsw.adfa.edu.au/unsw-canberra-cyber/cybersecurity/ADFA-NB15-Datasets/UNSW-NB15_2.csv"
+#     download.file(url = src.url.fullpath, destfile = local.data.fullpath)
+#     log_msg(pVerbose, "[*] Loading second set of data on the DataFrame...", "")
+#   }
+#   else {
+#     log_msg(pVerbose, "[*]   Raw data file already exists. It will NOT be downloaded again.", "")
+#     log_msg(pVerbose, "[*]   Loading existing file on the DataFrame...", "")
+#   }
+#   d2 <- read.csv(local.data.fullpath, stringsAsFactors = FALSE)
+#   log_msg(pVerbose, "[*]   Adding header to temp DataFrame...", "")
+#   colnames(d2) <- c("srcip","sport","dstip","dsport","proto","state","dur","sbytes","dbytes","sttl","dttl","sloss","dloss","service","Sload","Dload","Spkts","Dpkts","swin","dwin","stcpb","dtcpb","smeansz","dmeansz","trans_depth","res_bdy_len","Sjit","Djit","Stime","Ltime","Sintpkt","Dintpkt","tcprtt","synack","ackdat","is_sm_ips_ports","ct_state_ttl","ct_flw_http_mthd","is_ftp_login","ct_ftp_cmd","ct_srv_src","ct_srv_dst","ct_dst_ltm","ct_src_ltm","ct_src_dport_ltm","ct_dst_sport_ltm","ct_dst_src_ltm","attack_cat","Label")
+#   log_msg(pVerbose, "[*]   Keeping only Dos records from temp Dataframe...", "")
+#   d2 <- d2[d2$attack_cat == "DoS", ]
+#   log_msg(pVerbose, "[*]   Appending 2nd set of data on the DataFrame...", "")
+#   df.attacks <- rbind(df.attacks, d2)
 
     # local.data.fullpath <- file.path(local.data.folder, paste(local.data.filename, "3", ".csv", sep=""))
     # if (pOverwrite.data | !file.exists(local.data.fullpath)) {
@@ -205,14 +222,14 @@ download_data <- function (pVerbose, pOverwrite.data, pTesting) {
     # d2 <- d2[d2$attack_cat == "DoS", ]
     # log_msg(pVerbose, "[*]   Appending 4th set of data on the DataFrame...", "")
     # df.attacks <- rbind(df.attacks, d2)
-    rm(d2)
-  }
+#    rm(d2)
+#  }
 
   # ## Corregim el nom de la primera columna perquè es carrega incorrectament del fitxer (???)
   # colnames(df.attacks)[colnames(df.attacks) == "ï..srcip"] <- "srcip"
   # log_msg(pVerbose, "[*] Data loaded onto the DataFrame.", "")
 
-  saveRDS(object = df.attacks, file = file.path(local.data.folder, "attacks.rds"))
+  saveRDS(object = df.attacks, file = file.path(local.data.folder, "attacks2.rds"))
   log_msg(pVerbose, "[*] Source Data saved in RDS file.", "")
 
   return(df.attacks)
@@ -259,7 +276,7 @@ download_maxmind <- function (pVerbose, pOverwrite.data, pTesting) {
 
   log_msg(pVerbose, "[*]     Adding range boundaries to each network...", "")
   df.maxmind <- cbind(df.maxmind, iptools::range_boundaries(df.maxmind$network))
-  df.maxmind$rowname <- as.integer(row.names(df.maxmind))
+  df.maxmind$rowname <- as.numeric(row.names(df.maxmind))  #as.integer
 
   log_msg(pVerbose, "[*]     Removing column Range, as it's duplicated...", "")
   df.maxmind$range <- NULL
@@ -367,17 +384,17 @@ addIPgeolocation <- function(ips = "", df.maxmind = data.frame(), boost = FALSE)
     no_cores <- parallel::detectCores() - 1
     cl <- parallel::makeCluster(no_cores)
     parallel::clusterExport(cl, "df.maxmind", envir = environment())
-    df$maxmind.rowname <- sapply(ips,
+    df$maxmind.rowname <- as.numeric(sapply(ips,
                                  function(ip)
                                    which((ip >= df.maxmind$min_numeric) &
-                                           (ip <= df.maxmind$max_numeric)))
+                                           (ip <= df.maxmind$max_numeric))))
     parallel::stopCluster(cl)
     rm(cl, no_cores)
   } else {
-    df$maxmind.rowname <- sapply(ips,
+    df$maxmind.rowname <- as.numeric(sapply(ips,
                                  function(ip)
                                    which((ip >= df.maxmind$min_numeric) &
-                                           (ip <= df.maxmind$max_numeric)))
+                                           (ip <= df.maxmind$max_numeric))))
   }
 
   df <- dplyr::left_join(df, df.maxmind, by = c("maxmind.rowname" = "rowname"))
@@ -415,9 +432,12 @@ find_geolocation_data <- function(pVerbose, df.attacks, df.maxmind) {
   df <- dplyr::bind_cols(df, geo.src, geo.dst)
 
   log_msg(pVerbose, "[*]     Selecting only the required fields...", "")
-  df <- dplyr::select(df, attack_cat,
+  df <- dplyr::select(df, timestamp,
                       srcip, sport, src_latitude, src_longitude, src_accuracy_radius,
                       dstip, dsport, dst_latitude, dst_longitude, dst_accuracy_radius)
+
+  df <- df[!is.na(df$src_latitude), ]
+  df <- df[!is.na(df$dst_latitude), ]
 
   log_msg(pVerbose, "[*]     Columns filtered. Returning dataframe.", "")
   return(df)
@@ -444,7 +464,7 @@ main <- function (verbose = TRUE, overwrite.data = FALSE, testing = FALSE, scope
   # verbose <- TRUE
   # overwrite.data <- FALSE
   # testing <- FALSE
-  # scope_test <- 10
+  # scope.test <- 10
   local.data.folder <- file.path(getwd(), "data")
 
   df.attacks <- download_data(verbose, overwrite.data, testing)
