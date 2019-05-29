@@ -253,43 +253,48 @@ download_maxmind <- function (pVerbose, pOverwrite.data, pTesting) {
 
   log_msg(pVerbose, "[*] ***** The parameter pTesting is ignored. It's only kept for future utilization *****")
 
-  if (pOverwrite.data | !file.exists(local.data.fullpath)) {
-    log_msg(pVerbose, "[*]   Read RAW data from MaxMind", "")
-    local.data.fullpath <- file.path(local.data.folder, local.data.filename)
-    download.file(url = src.url, destfile = local.data.fullpath)
+  if ((!pOverwrite.data) & file.exists(file.path(local.data.folder, "maxmind.rds"))) {
+    log_msg(pVerbose, "[*]   MaxMind RDS file exists. Loading... ", "")
+    df.maxmind <- readRDS(file.path(local.data.folder, "maxmind.rds"))
   } else {
-    log_msg(pVerbose, "[*]   MaxMind file already exists. It will NOT be downloaded again.", "")
+    if (pOverwrite.data | !file.exists(local.data.fullpath)) {
+      log_msg(pVerbose, "[*]   Read RAW data from MaxMind", "")
+      local.data.fullpath <- file.path(local.data.folder, local.data.filename)
+      download.file(url = src.url, destfile = local.data.fullpath)
+    } else {
+      log_msg(pVerbose, "[*]   MaxMind file already exists. It will NOT be downloaded again.", "")
+    }
+
+    log_msg(pVerbose, "[*]     Decompressing files...", "")
+    zipfiles <- decompress_multifile(pVerbose, local.data.fullpath, "zip", TRUE)
+    maxmind.source <- zipfiles$Name[grep(pattern = ".*GeoLite2-City-Blocks-IPv4.csv", x = zipfiles$Name)]
+    log_msg(pVerbose, "[*]     Unzipping file...", "")
+    unzip(zipfile = local.data.fullpath, exdir = local.data.folder, files = maxmind.source)
+    maxmind.source <- file.path(getwd(), "data", maxmind.source)
+
+    log_msg(pVerbose, "[*]     Loading file into a dataframe...", "")
+    df.maxmind <- read.csv(maxmind.source, stringsAsFactors = FALSE)
+
+    #file.remove(maxmind.source)
+    unlink(file.path(local.data.folder, "GeoLite2-City-CSV_*"), recursive = T)
+
+    log_msg(pVerbose, "[*]     Adding range boundaries to each network...", "")
+    df.maxmind <- cbind(df.maxmind, iptools::range_boundaries(df.maxmind$network))
+    df.maxmind$rowname <- as.numeric(row.names(df.maxmind))  #as.integer
+
+    log_msg(pVerbose, "[*]     Removing column Range, as it's duplicated...", "")
+    df.maxmind$range <- NULL
+
+    log_msg(pVerbose, "[*]     Removing other columns that are not needed...", "")
+    df.maxmind$geoname_id <- NULL
+    df.maxmind$registered_country_geoname_id <- NULL
+    df.maxmind$represented_country_geoname_id <- NULL
+    df.maxmind$postal_code <- NULL
+    log_msg(pVerbose, "[*]     Cleanup finished on MaxMind dataframe", "")
+
+    saveRDS(object = df.maxmind, file = file.path(local.data.folder, "maxmind.rds"))
+    log_msg(pVerbose, "[*] MaxMind Data saved in RDS file.", "")
   }
-
-  log_msg(pVerbose, "[*]     Decompressing files...", "")
-  zipfiles <- decompress_multifile(pVerbose, local.data.fullpath, "zip", TRUE)
-  maxmind.source <- zipfiles$Name[grep(pattern = ".*GeoLite2-City-Blocks-IPv4.csv", x = zipfiles$Name)]
-  log_msg(pVerbose, "[*]     Unzipping file...", "")
-  unzip(zipfile = local.data.fullpath, exdir = local.data.folder, files = maxmind.source)
-  maxmind.source <- file.path(getwd(), "data", maxmind.source)
-
-  log_msg(pVerbose, "[*]     Loading file into a dataframe...", "")
-  df.maxmind <- read.csv(maxmind.source, stringsAsFactors = FALSE)
-
-  #file.remove(maxmind.source)
-  unlink(file.path(local.data.folder, "GeoLite2-City-CSV_*"), recursive = T)
-
-  log_msg(pVerbose, "[*]     Adding range boundaries to each network...", "")
-  df.maxmind <- cbind(df.maxmind, iptools::range_boundaries(df.maxmind$network))
-  df.maxmind$rowname <- as.numeric(row.names(df.maxmind))  #as.integer
-
-  log_msg(pVerbose, "[*]     Removing column Range, as it's duplicated...", "")
-  df.maxmind$range <- NULL
-
-  log_msg(pVerbose, "[*]     Removing other columns that are not needed...", "")
-  df.maxmind$geoname_id <- NULL
-  df.maxmind$registered_country_geoname_id <- NULL
-  df.maxmind$represented_country_geoname_id <- NULL
-  df.maxmind$postal_code <- NULL
-  log_msg(pVerbose, "[*]     Cleanup finished on MaxMind dataframe", "")
-
-  saveRDS(object = df.maxmind, file = file.path(local.data.folder, "maxmind.rds"))
-  log_msg(pVerbose, "[*] MaxMind Data saved in RDS file.", "")
 
   return(df.maxmind)
 }
