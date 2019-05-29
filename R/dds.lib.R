@@ -337,27 +337,6 @@ add_columns_for_lookup <- function (pVerbose, pDataFrame) {
 
 
 
-#' Lookup to Maxmind to get geolocation (Lat, Lon, Accuracy) of IP_Ori and IP_Dest.
-#'
-#' @details Adds the geolocation columns into the DataFrame, by looking up to Maxmind through srcip_num and dstip_num.
-#' @return DataFrame with additional columns (Lat, Lon, Accuracy) for IP_Ori and IP_Dest
-#' @export
-#'
-#' @examples --
-lookup_to_maxmind <- function (pVerbose, pAttacks, pMaxMind) {
-
-  if (pVerbose) print("[*] Adding geolocation columns to dataframe, by looking up to MaxMind...")
-
-  df.attacks$sloc <- sapply(df.attacks$srcip_num,
-                            function(ip)
-                              which((ip >= df.maxmind$min_numeric) &
-                                      (ip <= df.maxmind$max_numeric)))
-
-  return (pAttacks)
-}
-
-
-
 #' Añadir la Geolocalización de las IPs al dataframe
 #'
 #' @details Añadimos la geolocalización de las IPS al dataframe definitivo a partir del dataset
