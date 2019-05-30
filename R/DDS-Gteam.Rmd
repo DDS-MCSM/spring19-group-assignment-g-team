@@ -4,7 +4,8 @@ output: html_document
 # DoS attacks analysis
 
 ## Resumen
-En este informe realizamos un analisis de los ataques DoS. La intención inicial es identificar a quien van dirigidos mayoritariamente dichos ataques (p.e. a estamentos gubernamentales, universidades, etc)
+En este informe realizamos un análisis de los **ataques DoS**.
+El objetivo  inicial es identificar a quién van dirigidos mayoritariamente dichos ataques (p.e. a estamentos gubernamentales, universidades, etc)
 
 Para ello, necesitaremos un dataset con conexiones identificadas como DoS, y otro dataset con los registros de DNS, para poer identificar los dominios de las IPs de destino (.gov, .edu, etc)
 
@@ -13,10 +14,10 @@ Nos encontramos con dos problemas:
 - No somos capaces de encontrar un dataset 'manejable' con información de tipo DNS. Los volumenes de los datasets que encontramos no hacen viable su manejo (hablamos de Gigas y Gigas...)
 Decidimos reenfocar el estudio, buscando otro data set de DoS con el objetivo de identificar cual es el puerto que más se utiliza para un ataque de este tipo. Encontramos otro dataset del que tomamos una muestra de 1390 observaciones, tomadas durante una hora en un ataque en octubre de 2017. El objetivo 
 
-- Distribución geográfica de atacantes yobjetivos.
-- ¿Cuál es el puerto más utilizado para un ataque DoS? 
+- Distribución geográfica de atacantes y objetivos.
+- ¿Cuál es el puerto más utilizado para este ataque DoS?
 
-## An?lisis
+## Análisis
 
 ```{r load_packages, echo = FALSE, cache = TRUE}
 # Definimos el directorio de trabajo
@@ -29,43 +30,31 @@ if (length(new.pkg))
 {
     install.packages(new.pkg)  
 }
-```
-
-Symantec proporciona las coordenadas de los equipos infectados en un archivo de tipo CSV, con los siguientes campos de informaci?n:
-```{r load_symantec_data, echo = FALSE, cache = TRUE}
-dosmap <- readRDS(file.path(getwd(),"..", "data", "results.rds"))
-str(dosmap)
-#za <- read.csv("data/zeroaccess.csv", header=T)
-#str(za)
-```
-
-Representando esta informaci?n con un gr?fico de dispersi?n podemos ver que la distribuci?n se asemeja notablemente al mapamundi:
-```{r dispersion_coord, echo = FALSE, cache = TRUE, fig.align = 'center'}
 library(ggplot2)
-# Creamos ggplot con los datos de symantec
-gg <- ggplot(data=dosmap)
-# definimos la grafica por puntos con transparencia
-gg <- gg + geom_point(aes(x=dosmap$src_longitude, y=dosmap$src_latitude), size=1, color="#FF0000", alpha=1/5) 
-gg <- gg + geom_point(aes(x=dosmap$dst_longitude, y=dosmap$dst_latitude), size=1, color="#0000FF", alpha=1/5) 
-# Titulos de los ejes
-gg <- gg + xlab("Longitud") + ylab("Latitud")
-# aplicamos el tema simple
-gg <- gg + theme_bw() 
-# tarda un poco pq son 800.000 puntos
-print(gg)
+
 ```
-Con esta representaci?n se puede identificar que la mayor concentraci?n de infecciones ocurren en la mayor parte de Europa, la costa este de EEUU y en menor grado en Jap?n y otros puntos del planeta.  
-A?adimos informaci?n sobre paises y sus fronteras para enriquecer el mapa.
+
+Mostramos los datos obtenidos, una vez descargados y procesados:
+```{r load_symantec_data, echo = FALSE, cache = TRUE}
+dos <- readRDS(file.path(getwd(),"..", "data", "results.rds"))
+wct <- data.frame(table(dos$dsport))
+colnames(wct) <- c("dsport", "count")
+merged <- merge(dos, wct)
+
+dosmap <- merged[!merged$count==1, ]
+dosmap <- dosmap[!dosmap$count==2, ]
+str(dosmap)
+```
+
+Resecto al primer objetivo del análisis, mostramos la información sobre un mapa del mundo para localizar desde dónde se ha lanzado este ataque (puntos en color rojo), y dónde se encuentra el objetivo (en azul).
 ```{r map_simple, echo=FALSE, cache=TRUE, fig.align='center'}
 world <- map_data("world")
-# Quitamos el continete Antarctico ya que no aporta informaci?n
-# No es nada personal con los pinguinos...
 world <- subset(world, world$region!="Antarctica")
 
 gg <- ggplot(data=world, aes(x=long, y=lat))
 gg <- gg + geom_path(aes(group=group), colour="gray70")
 # # La definici?n de la proyeccion representa la "curvatura" del mapa
- gg <- gg + coord_map("mercator", xlim=c(-200, 200))
+gg <- gg + coord_map("mercator", xlim=c(-200, 200))
 # definimos la grafica por puntos con transparencia
 gg <- gg + geom_point(data=dosmap, aes(x=dosmap$src_longitude, y=dosmap$src_latitude), size=1, color="#FF0000", alpha=1/5) 
 gg <- gg + geom_point(data=dosmap, aes(x=dosmap$dst_longitude, y=dosmap$dst_latitude), size=1, color="#0000FF", alpha=1/5) 
@@ -78,98 +67,64 @@ gg <- gg + geom_point(data=dosmap, aes(x=dosmap$dst_longitude, y=dosmap$dst_lati
 print(gg)
 ```
 
-Ahora tenemos una representaci?n real de las conexiones de la botnet, pero seguimos sin poder decir mucho m?s que el malware ZeroAccess tiene un alcance internacional.  
-Vamos a ver la distribuci?n en funci?n de los paises afectados. Para ello usaremos un mapa de tipo ***choropleth***, que b?sicamente significa pintar los paises con colores.
-```{r map_choropleth, echo = FALSE, cache = TRUE, fig.align = 'center'}
-library(maps)
-library(maptools)
-# peque?a modificaci?n de la version de (@rweald)
-# https://gist.github.com/rweald/4720788
-latlong2map <- function(pointsDF, mapping) {
-  # load up the map data
-  local.map <- map(mapping, fill=TRUE, col="transparent", plot=FALSE)
-  # pull out the IDs from the name
-  IDs <- sapply(strsplit(local.map$names, ":"), function(x) x[1])
-  # Prepare SpatialPolygons object 
-  maps_sp <- map2SpatialPolygons(local.map, IDs=IDs,
-                                 proj4string=CRS("+proj=longlat +datum=wgs84"))
-  # Convert pointsDF to a SpatialPoints object
-  pointsSP <- SpatialPoints(pointsDF,
-                            proj4string=CRS("+proj=longlat +datum=wgs84"))
-  # Use 'over' to get _indices_ of the Polygons object containing each point
-  indices <- over(pointsSP, maps_sp)
-  # Return the names of the Polygons object containing each point
-  mapNames <- sapply(maps_sp@polygons, function(x) x@ID)
-  # now return a vector of names that match the points
-  mapNames[indices]
-}
 
-# Esta funcion devuelve un vector con los nombres de los paises, de esta forma
-# se puede contar cuantas veces aparece un pais con la funcion table()
-# Lo que hay que hacer es transformar la informaci?n de lat/long a nombre de pais
+En la siguiente gráfica vemos la distribución de puertos utilizados para este ataque:
 
-zworld <- latlong2map(data.frame(x=dosmap$src_longitude, y=dosmap$src_latitude), "world")
-# cuenta los puntos en un pais y lo convierte en data frame
-wct <- data.frame(table(zworld))
-# definimos los nombres de la variables
-colnames(wct) <- c("region", "count")
-# la funcion merge se realiza por "region" al hacer match
-za.choro <- merge(world, wct)
-# ordenamos el mapa
-za.choro <- za.choro[with(za.choro, order(group, order)), ]
-# y lo "pintamos"
-gg <- ggplot(za.choro, aes(x=za.choro$long, y=za.choro$lat, group=group, fill=count))
-gg <- gg + geom_path(colour="#666666") + geom_polygon()
-gg <- gg + coord_map("mercator", xlim=c(-200, 200), ylim=c(-60,200))
-gg <- gg + scale_fill_gradient2(low="#FFFFFF", high="#4086BB", #4086AA
-                                midpoint=median(za.choro$count),
-                                name="Infecciones")
-# Eliminamos texto y le damos un poco de color
-gg <- gg + theme(axis.title=element_blank(),
-                 axis.text=element_blank(),
-                 axis.ticks=element_blank(),
-                 panel.grid=element_blank(),
-                 panel.background=element_rect(color="gray50",
-                                               fill="white"))
-print(gg)
+```{r distribucion_puertos, echo=FALSE, cache=TRUE, fig.align='center'}
+gg <- barplot(table(dosmap$dsport), xlab="Destination Ports", ylab="Number of requests", main="Peticiones recibidas por puerto", col=rainbow(10))
+
+
 ```
-En este punto podemos decir que la mayoria de las infeciones se encuentran en EEUU. Esto no lo podriamos haber deducido con los anteriores mapas. Para ver con m?s detalle la diferencia entre paises, mostramos la distribuci?n en funci?n del porcentaje de infecciones de cada pais (top10):
-```{r top10_infections, echo = FALSE, cache = TRUE}
-# for each wct$count, divide by sum, gives us proportion of the whole
-perc <- wct$count/sum(wct$count)
-# covert to a readable format, round it and create percent
-wct$perc <- round(perc, 4)*100
-# now order the highest percentages on top
-wct <- wct[with(wct, order(perc, decreasing=T)), ]
-# look at the top few entries.
-head(wct, 10)
+
+
+
+En la siguiente gráfica vemos el número de paquetes que se han enviado a cada puerto, para esta muestra de datos:
+
+```{r distribucion_paquetes, echo=FALSE, cache=TRUE, fig.align='center'}
+
+
+gg <- barplot(table(dosmap$dsport), xlab="Destination Ports", ylab="Number of requests", main="Paquetes recibidos por puerto", col=rainbow(10))
+
+
 ```
-i mostrem un histograma per veure com evolucionen els atacs al llarg del temps: 
-```{r top10_infections, echo = FALSE, cache = TRUE}
-zworld <- latlong2map(data.frame(x=dosmap$src_longitude, y=dosmap$src_latitude), "world")
-freqpais <- data.frame(table(zworld))
-colnames(freqpais) <- c("pais", "count")
-dataf <- merge(dosmap, freq, by.x="timestamp", by.y="ts")
 
-freqdsport <- data.frame(table(dosmap$dsport))
-colnames(freqdsport) <- c("dsport", "count")
-dataf <- merge(dosmap, freqdsport)
-
-freq <- data.frame(table(dosmap$timestamp))
-colnames(freq) <- c("ts", "count")
-dataf <- merge(dosmap, freq, by.x="timestamp", by.y="ts")
-
-gg <- ggplot(dosmap, aes("dsport"))
-gg <- gg + geom_bar()
-gg <- gg + geom_bar(aes(fill = dsport))
-
-# # for each wct$count, divide by sum, gives us proportion of the whole
-# perc <- wct$count/sum(wct$count)
-# # covert to a readable format, round it and create percent
-# wct$perc <- round(perc, 4)*100
-# # now order the highest percentages on top
-# wct <- wct[with(wct, order(perc, decreasing=T)), ]
-# # look at the top few entries.
-# head(wct, 10)
-print(gg)
+```{r proves_per_esborrar, echo=FALSE, cache=TRUE, fig.align='center'}
+# # cuenta los puntos en un pais y lo convierte en data frame
+# wct <- data.frame(table(dosmap$dsport))
+# # definimos los nombres de la variables
+# colnames(wct) <- c("dsport", "count")
+# merged <- merge(dosmap, wct)
+# gg <- ggplot(data=wct, aes(x=dsport))
+# gg <- gg + geom_bar()
+# 
+# print(gg)
+# 
+#   hist(dosmap$dsport)
+# 
+# wct <- t(wct)
+# wct <- data.frame(wct)
+# table(wct)
+# 
+# barplot(table(dosmap$dsport))
+# 
+# 
+# world <- map_data("europe")
+# # Quitamos el continete Antarctico ya que no aporta informaci?n
+# # No es nada personal con los pinguinos...
+# world <- subset(world, world$region!="Antarctica")
+# 
+# gg <- ggplot(data=world, aes(x=long, y=lat))
+# gg <- gg + geom_path(aes(group=group), colour="gray70")
+# # # La definici?n de la proyeccion representa la "curvatura" del mapa
+#  gg <- gg + coord_map("mercator", xlim=c(-200, 200))
+# # definimos la grafica por puntos con transparencia
+# gg <- gg + geom_point(data=dosmap, aes(x=dosmap$src_longitude, y=dosmap$src_latitude), size=1, color="#FF0000", alpha=1/5) 
+# gg <- gg + geom_point(data=dosmap, aes(x=dosmap$dst_longitude, y=dosmap$dst_latitude), size=1, color="#0000FF", alpha=1/5) 
+# # # Eliminamos texto y le damos un poco de color
+#  gg <- gg + theme(text=element_blank(),
+#                   axis.ticks=element_blank(),
+#                   panel.grid=element_blank(),
+#                   panel.background=element_rect(color="gray40",
+#                                                fill="white"))
+# print(gg)
 ```
