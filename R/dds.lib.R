@@ -473,3 +473,13 @@ main <- function (verbose = TRUE, overwrite.data = FALSE, testing = FALSE, scope
 
   return(df)
 }
+#' Estudis varis
+
+#'contaipdesti <- dplyr::count(results, dstip, sort = TRUE)
+#'contaiporigen <- dplyr::count(results, srcip, sort = TRUE)
+#'contaportdesti <- dplyr::count(results, dsport, sort = TRUE)
+                                            
+#' pinta.map <- ggplot(results, aes(x = results$src_longitude, y = results$src_latitude))
+#' pinta.map + geom_polygon(fill = "white", colour = "red")
+
+#' pinta.map + coord_map("rectangular",0)
