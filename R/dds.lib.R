@@ -418,7 +418,7 @@ find_geolocation_data <- function(pVerbose, df.attacks, df.maxmind) {
   log_msg(pVerbose, "[*]     Selecting only the required fields...", "")
   df <- dplyr::select(df, timestamp,
                       srcip, sport, src_latitude, src_longitude, src_accuracy_radius,
-                      dstip, dsport, dst_latitude, dst_longitude, dst_accuracy_radius)
+                      dstip, dsport, dst_latitude, dst_longitude, dst_accuracy_radius, packets, proto)
 
   df <- df[!is.na(df$src_latitude), ]
   df <- df[!is.na(df$dst_latitude), ]
@@ -478,7 +478,7 @@ main <- function (verbose = TRUE, overwrite.data = FALSE, testing = FALSE, scope
 #'contaipdesti <- dplyr::count(results, dstip, sort = TRUE)
 #'contaiporigen <- dplyr::count(results, srcip, sort = TRUE)
 #'contaportdesti <- dplyr::count(results, dsport, sort = TRUE)
-                                            
+
 #' pinta.map <- ggplot(results, aes(x = results$src_longitude, y = results$src_latitude))
 #' pinta.map + geom_polygon(fill = "white", colour = "red")
 
