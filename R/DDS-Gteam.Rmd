@@ -7,15 +7,23 @@ output: html_document
 En este informe realizamos un análisis de los **ataques DoS**.
 El objetivo  inicial es identificar a quién van dirigidos mayoritariamente dichos ataques (p.e. a estamentos gubernamentales, universidades, etc)
 
-Para ello, necesitaremos un dataset con conexiones identificadas como DoS, y otro dataset con los registros de DNS, para poer identificar los dominios de las IPs de destino (.gov, .edu, etc)
+Para ello, necesitaremos un dataset con conexiones identificadas como DoS, y otro dataset con los registros de DNS, para poder identificar los dominios de las IPs de destino (.gov, .edu, etc)
 
 Nos encontramos con dos problemas:
-- Falta de datasets de DoS. Encontramos uno de un centro de Ciberseguridad de Australia, pero cuyas IPs de origen son siempre de la misma red (es una IP de Corea del Norte), y las IPs de destino son siempre de la misma zona (Canberra - Australia).
-- No somos capaces de encontrar un dataset 'manejable' con información de tipo DNS. Los volumenes de los datasets que encontramos no hacen viable su manejo (hablamos de Gigas y Gigas...)
-Decidimos reenfocar el estudio, buscando otro data set de DoS con el objetivo de identificar cual es el puerto que más se utiliza para un ataque de este tipo. Encontramos otro dataset del que tomamos una muestra de 1390 observaciones, tomadas durante una hora en un ataque en octubre de 2017. El objetivo 
+
+- Falta de datasets específicos de DoS. Encontramos uno de un centro de Ciberseguridad de Australia, pero cuyas IPs de origen son siempre de la misma red (es una IP de Corea del Norte), y las IPs de destino son también de la misma red (Canberra - Australia).
+
+- No somos capaces de encontrar un dataset de tipo DNS, con un volumen 'manejable'. Los volumenes de los datasets que encontramos no hacen viable su procesamiento (hablamos de Gigas y Gigas...)
+
+Decidimos reenfocar el estudio, buscando algún otro dataset de DoS (que tenga más variedad de IPs), y nos marcamos otros objetivos (p.e. identificar cuál es el puerto que más se utiliza para un ataque de este tipo). Encontramos un dataset correspondiente a un ataque de octubre de 2016, que incluye las peticiones recibidas durante una hora. Tomamos una muestra de algo más de 1000 observaciones.
+
+Los objetivos que nos marcamos son:
 
 - Distribución geográfica de atacantes y objetivos.
+
 - ¿Cuál es el puerto más utilizado para este ataque DoS?
+
+- ¿Cuál es la IP más activa?
 
 ## Análisis
 
@@ -34,19 +42,21 @@ library(ggplot2)
 
 ```
 
-Mostramos los datos obtenidos, una vez descargados y procesados:
+
+Mostramos los datos obtenidos, una vez procesados:
 ```{r load_symantec_data, echo = FALSE, cache = TRUE}
 dos <- readRDS(file.path(getwd(),"..", "data", "results.rds"))
 wct <- data.frame(table(dos$dsport))
 colnames(wct) <- c("dsport", "count")
 merged <- merge(dos, wct)
-
-dosmap <- merged[!merged$count==1, ]
-dosmap <- dosmap[!dosmap$count==2, ]
+dosmap <- merged[!merged$count<2, ]
 str(dosmap)
+
 ```
 
-Resecto al primer objetivo del análisis, mostramos la información sobre un mapa del mundo para localizar desde dónde se ha lanzado este ataque (puntos en color rojo), y dónde se encuentra el objetivo (en azul).
+
+
+Respecto al primer objetivo del análisis, mostramos la información sobre un mapa del mundo para localizar desde dónde se ha lanzado este ataque (puntos en color rojo), y dónde se encuentra el objetivo (en azul).
 ```{r map_simple, echo=FALSE, cache=TRUE, fig.align='center'}
 world <- map_data("world")
 world <- subset(world, world$region!="Antarctica")
@@ -68,63 +78,53 @@ print(gg)
 ```
 
 
+En la siguiente gráfica vemos la distribución de IPs origen utilizadas para este ataque:
+
+```{r distribucio_IPs_origen, echo=FALSE, cache=TRUE, fig.align='center'}
+wct2 <- data.frame(table(dos$srcip))
+colnames(wct2) <- c("srcip", "count")
+merged2 <- merge(dos, wct2)
+merged2 <- merged2[merged2$count>5, ]
+dosmap2 <- merged2[merged2$count>5, ]
+
+#gg <- barplot(table(dosmap2$srcip), xlab="Source IP", ylab="Number of requests", main="Peticiones enviadas por IP origen", col=rainbow(10), cex.names = 0.5)
+gg <- pie(table(dosmap2$srcip), main="Peticiones enviadas por cada IP origen", col=rainbow(10))
+
+
+```
+
+
+Posicionamos en el mapa la localización de la IP más activa
+```{r posicionar_IP_mes_activa, echo=FALSE, cache=TRUE, fig.align='center'}
+world <- map_data("world")
+world <- subset(world, world$region!="Antarctica")
+
+gg <- ggplot(data=world, aes(x=long, y=lat))
+gg <- gg + geom_path(aes(group=group), colour="gray70")
+# # La definici?n de la proyeccion representa la "curvatura" del mapa
+gg <- gg + coord_map("mercator", xlim=c(-200, 200))
+
+dosmap3 <- dosmap2[dosmap2$count==max(dosmap2$count), ]
+# definimos la grafica por puntos con transparencia
+gg <- gg + geom_point(data=dosmap3, aes(x=dosmap3$src_longitude, y=dosmap3$src_latitude), size=1, color="#FF0000", alpha=1/5) 
+# # Eliminamos texto y le damos un poco de color
+ gg <- gg + theme(text=element_blank(),
+                  axis.ticks=element_blank(),
+                  panel.grid=element_blank(),
+                  panel.background=element_rect(color="gray40",
+                                               fill="white"))
+print(gg)
+```
+
+
 En la siguiente gráfica vemos la distribución de puertos utilizados para este ataque:
 
-```{r distribucion_puertos, echo=FALSE, cache=TRUE, fig.align='center'}
-gg <- barplot(table(dosmap$dsport), xlab="Destination Ports", ylab="Number of requests", main="Peticiones recibidas por puerto", col=rainbow(10))
+```{r distribucion_ports, echo=FALSE, cache=TRUE, fig.align='center'}
+gg <- barplot(table(dosmap$dsport), xlab="Destination Ports", ylab="Number of requests", main="Peticiones recibidas por puerto", col=rainbow(10), cex.names=0.7)
+#gg <- pie(table(dosmap$dsport), xlab="Destination Ports", ylab="Number of requests", main="Peticiones recibidas por puerto", col=rainbow(10))
 
 
 ```
 
 
 
-En la siguiente gráfica vemos el número de paquetes que se han enviado a cada puerto, para esta muestra de datos:
-
-```{r distribucion_paquetes, echo=FALSE, cache=TRUE, fig.align='center'}
-
-
-gg <- barplot(table(dosmap$dsport), xlab="Destination Ports", ylab="Number of requests", main="Paquetes recibidos por puerto", col=rainbow(10))
-
-
-```
-
-```{r proves_per_esborrar, echo=FALSE, cache=TRUE, fig.align='center'}
-# # cuenta los puntos en un pais y lo convierte en data frame
-# wct <- data.frame(table(dosmap$dsport))
-# # definimos los nombres de la variables
-# colnames(wct) <- c("dsport", "count")
-# merged <- merge(dosmap, wct)
-# gg <- ggplot(data=wct, aes(x=dsport))
-# gg <- gg + geom_bar()
-# 
-# print(gg)
-# 
-#   hist(dosmap$dsport)
-# 
-# wct <- t(wct)
-# wct <- data.frame(wct)
-# table(wct)
-# 
-# barplot(table(dosmap$dsport))
-# 
-# 
-# world <- map_data("europe")
-# # Quitamos el continete Antarctico ya que no aporta informaci?n
-# # No es nada personal con los pinguinos...
-# world <- subset(world, world$region!="Antarctica")
-# 
-# gg <- ggplot(data=world, aes(x=long, y=lat))
-# gg <- gg + geom_path(aes(group=group), colour="gray70")
-# # # La definici?n de la proyeccion representa la "curvatura" del mapa
-#  gg <- gg + coord_map("mercator", xlim=c(-200, 200))
-# # definimos la grafica por puntos con transparencia
-# gg <- gg + geom_point(data=dosmap, aes(x=dosmap$src_longitude, y=dosmap$src_latitude), size=1, color="#FF0000", alpha=1/5) 
-# gg <- gg + geom_point(data=dosmap, aes(x=dosmap$dst_longitude, y=dosmap$dst_latitude), size=1, color="#0000FF", alpha=1/5) 
-# # # Eliminamos texto y le damos un poco de color
-#  gg <- gg + theme(text=element_blank(),
-#                   axis.ticks=element_blank(),
-#                   panel.grid=element_blank(),
-#                   panel.background=element_rect(color="gray40",
-#                                                fill="white"))
-# print(gg)
-```
