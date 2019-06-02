@@ -15,15 +15,29 @@ Nos encontramos con dos problemas:
 
 - No somos capaces de encontrar un dataset de tipo DNS, con un volumen 'manejable'. Los volumenes de los datasets que encontramos no hacen viable su procesamiento (hablamos de Gigas y Gigas...)
 
-Decidimos reenfocar el estudio, buscando algún otro dataset de DoS (que tenga más variedad de IPs), y nos marcamos otros objetivos (p.e. identificar cuál es el puerto que más se utiliza para un ataque de este tipo). Encontramos un dataset correspondiente a un ataque de octubre de 2016, que incluye las peticiones recibidas durante una hora. Tomamos una muestra de algo más de 1000 observaciones.
+Decidimos reenfocar el estudio, buscando algún otro dataset de DoS (que tenga más variedad de IPs), y nos marcamos otros objetivos (p.e. identificar cuál es el puerto que más se utiliza para un ataque de este tipo).
 
-Los objetivos que nos marcamos son:
+Encontramos un dataset correspondiente a un ataque de octubre de 2016, que incluye las peticiones recibidas durante una hora. Tomamos una muestra de algo más de 1000 observaciones.
+
+Para esta práctica los objetivos que nos marcamos son:
 
 - Distribución geográfica de atacantes y objetivos.
 
 - ¿Cuál es el puerto más utilizado para este ataque DoS?
 
 - ¿Cuál es la IP más activa?
+
+Respecto a los ficheros que necesitaremos:
+
+- El fichero de datos (conexiones de tipo DoS) se llama 'mendeley.csv' y se encuentra en el directorio "Data". Habrá que descargarlo de nuestro github ya que el fichero de la web de Mendeley tiene un volumen inmanejable para nosotros.
+
+- El fichero para hacer la geolocalización de las IPs (MaxMind) se descargará automáticamente ejecutando el main().
+
+En la presentación que hemos compartido en el portal del 'talent', de detallan los trabajos realizados.
+
+Las funciones están documentadas, así como la utilización de la función main().
+
+
 
 ## Análisis
 
@@ -127,4 +141,15 @@ gg <- barplot(table(dosmap$dsport), xlab="Destination Ports", ylab="Number of re
 ```
 
 
+Como vemos, el puerto 123 ha sido el más utilizado en este ataque, contrariamente a lo que esperábamos nosotros inicialmente (esperábamos que el puerto más atacado fuese otro, quizás más conocido, como el 80, 8080 o 443). Aunque éste hecho (que el puerto más atacado sea el 123) también podría ser debido a la selección de los datos, que aun siendo aleatoria, nos esté dando una visión sesgada de la realidad. 
 
+
+## Conclusiones
+
+A partir de este resultado, analizamos qué información puede obtenerse de ese puerto, o para qué se utiliza. Por lo que vemos, el puerto 123 ofrece el servicio NTP (Network Time Protocol) que se utiliza para sincronizar la fecha/hora de las máquinas de una red.
+
+También ofrece otro tipo de información, como el tiempo que hace que esa máquina está encendida, y estadísticas de utilización de la memoria y I/O.
+
+Dicha información interna del sistema podría ser utilizada para usos ilícitos (alteración de logs y auditorías, modificación de tareas programadas/cron, etc), aunque no hemos encontrado documentación indicando que pueda provocar una caída del sistema.
+
+.
