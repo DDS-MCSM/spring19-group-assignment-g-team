@@ -2,19 +2,23 @@
 % Please edit documentation in R/dds.lib.R
 \name{addIPgeolocation}
 \alias{addIPgeolocation}
-\title{TBD.}
+\title{Añadir la Geolocalización de las IPs al dataframe}
 \usage{
 addIPgeolocation(ips = "", df.maxmind = data.frame(), boost = FALSE)
 }
 \value{
-TBD
+Dataframe final
 }
 \description{
-TBD.
+Añadir la Geolocalización de las IPs al dataframe
 }
 \details{
-TBD.
+Añadimos la geolocalización de las IPS al dataframe definitivo a partir del dataset
+         de maxmind
 }
 \examples{
---
+\dontrun{
+geoips <- addIPgeolocation(ips = c("8.8.8.8", "147.81.23.1"),
+                           df.maxmind = download.maxmind())
+}
 }

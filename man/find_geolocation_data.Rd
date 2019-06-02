@@ -2,15 +2,15 @@
 % Please edit documentation in R/dds.lib.R
 \name{find_geolocation_data}
 \alias{find_geolocation_data}
-\title{TBD.}
+\title{Buscamos la información GPS de cada IP y la añadimos al dataframe}
 \usage{
 find_geolocation_data(pVerbose, df.attacks, df.maxmind)
 }
 \value{
-TBD
+Dataframe final definitivo con las columnas que nos interesan
 }
 \description{
-TBD.
+Buscamos la información GPS de cada IP y la añadimos al dataframe
 }
 \details{
 TBD.

@@ -5,7 +5,7 @@
 \title{Generem una part del dataframe, reduït a un cert nombre de files. El nombre de files es genera
 de manera al·leatòria a partir de pData.}
 \usage{
-get_subset_rows(pVerbose, pData, pNumRows)
+get_subset_rows(pVerbose, pData, pNumRows, pSeed)
 }
 \value{
 Obtenim el df que busquem amb un nombre de files indicat per pNumRows provinent de pData.

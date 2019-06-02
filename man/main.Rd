@@ -4,7 +4,8 @@
 \alias{main}
 \title{Main function, which calls the rest of functions}
 \usage{
-main()
+main(verbose = TRUE, overwrite.data = FALSE, testing = FALSE,
+  scope.test = 10)
 }
 \value{
 Retorna un resum del dataframe final
