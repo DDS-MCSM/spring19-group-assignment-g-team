@@ -66,3 +66,13 @@ Amb la matriu de resultats, volem fer els següents estudis o anàlisis:
 - observar, segurament també en un histograma, quins són els ports més usats per fer aquests tipus d'atacs.
 
 ### Results / Conclusions.
+A partir dels primers resultats, analitzem quina mena de dades poden ser interessants per fer-ne l'estudi.
+Trobem que hi ha IPs més actives que altres a l'hora de generar els atacs, o que hi ha ports de destí més usats que altres per tal d'entrar a la màquina de destí.
+Així, p.e., la IPs més activa es troba a Sèrbia, i el port més usat és el 123, corresponent a la sincronització de temps dels diferents dispositius (NTP Server). Aquest resultat ens ha sorprés, al ser un port poc comú respecte els que haviem vist fins ara (21, 80, 443, ...)
+Aleshores, triem els següents conceptes per tal d'obtenir els nostres resultats finals:
+- Representació, en un mapammundi, de les IPs atacants i víctimes
+- Gràfic de tipus formatge indicant la quantitat d'atacs de cada IP atacant
+- Gràfic de barres per mostrar la quantitat d'atacs segons el port de destí
+
+Val a dir que la mostra és poc significativa ja que en total, abasta un total d'1h de dades.
+Altres datasets que haviem descarregat eren molt extensos, o estaven en formats més complicats de parsejar.
